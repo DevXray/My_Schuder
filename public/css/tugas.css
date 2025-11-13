@@ -1,0 +1,401 @@
+/* Page Header */
+.page-header {
+    background: linear-gradient(135deg, var(--primary-blue), var(--primary-orange));
+    border-radius: 20px;
+    padding: 2.5rem;
+    margin-bottom: 2rem;
+    color: var(--white);
+    box-shadow: var(--shadow-xl);
+    position: relative;
+    overflow: hidden;
+}
+
+.page-header::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -10%;
+    width: 300px;
+    height: 300px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+}
+
+.page-header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+    z-index: 1;
+}
+
+.page-title-section h1 {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.page-title-section p {
+    font-size: 1.1rem;
+    opacity: 0.95;
+}
+
+.header-actions {
+    display: flex;
+    gap: 1rem;
+}
+
+/* Tab Count Badge */
+.tab-count {
+    background: rgba(0, 0, 0, 0.1);
+    padding: 0.2rem 0.6rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.filter-tab.active .tab-count {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.tab-count.warning {
+    background: #fef3c7;
+    color: var(--warning);
+}
+
+.tab-count.success {
+    background: #d1fae5;
+    color: var(--success);
+}
+
+.tab-count.blue {
+    background: var(--light-blue);
+    color: var(--primary-blue);
+}
+
+/* Tugas Container */
+.tugas-container {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+/* Tugas Item */
+.tugas-item {
+    background: var(--white);
+    border-radius: 20px;
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+    transition: var(--transition);
+    border: 2px solid transparent;
+    position: relative;
+}
+
+.tugas-item:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-xl);
+    border-color: var(--primary-blue);
+}
+
+/* Priority Badge */
+.tugas-priority {
+    position: absolute;
+    top: 20px;
+    right: -35px;
+    background: var(--warning);
+    color: var(--white);
+    padding: 0.5rem 2.5rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    transform: rotate(45deg);
+    box-shadow: var(--shadow-md);
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    animation: pulse 2s infinite;
+}
+
+.tugas-priority.high {
+    background: #dc2626;
+}
+
+/* Grade Badge */
+.tugas-grade {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    background: linear-gradient(135deg, var(--success), #059669);
+    color: var(--white);
+    padding: 1rem 1.5rem;
+    border-radius: 12px;
+    box-shadow: var(--shadow-lg);
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 700;
+}
+
+.tugas-grade.excellent {
+    background: linear-gradient(135deg, var(--success), #059669);
+}
+
+.tugas-grade.good {
+    background: linear-gradient(135deg, var(--primary-blue), var(--dark-blue));
+}
+
+.tugas-grade i {
+    font-size: 1.2rem;
+}
+
+.grade-value {
+    font-size: 2rem;
+    line-height: 1;
+}
+
+.grade-label {
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+/* Tugas Header */
+.tugas-header {
+    padding: 1.5rem 2rem;
+    background: linear-gradient(135deg, #f8fafc, #e0f2fe);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+.tugas-info h3 {
+    font-size: 1.3rem;
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+}
+
+.tugas-subject {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.tugas-subject i {
+    color: var(--primary-blue);
+}
+
+/* Status Badge */
+.tugas-status {
+    padding: 0.6rem 1.2rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    white-space: nowrap;
+}
+
+.tugas-status.pending {
+    background: #fef3c7;
+    color: var(--warning);
+}
+
+.tugas-status.submitted {
+    background: #dbeafe;
+    color: var(--primary-blue);
+}
+
+.tugas-status.graded {
+    background: #d1fae5;
+    color: var(--success);
+}
+
+/* Tugas Body */
+.tugas-body {
+    padding: 2rem;
+}
+
+.tugas-description {
+    color: var(--text-secondary);
+    line-height: 1.7;
+    margin-bottom: 1.5rem;
+    font-size: 1rem;
+}
+
+/* Feedback Box */
+.feedback-box {
+    background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+    border-left: 4px solid var(--success);
+    padding: 1.5rem;
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+}
+
+.feedback-box.warning {
+    background: linear-gradient(135deg, #fef3c7, #fde68a);
+    border-left-color: var(--warning);
+}
+
+.feedback-box h4 {
+    color: var(--text-primary);
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1rem;
+}
+
+.feedback-box p {
+    color: var(--text-secondary);
+    line-height: 1.6;
+    font-size: 0.95rem;
+    margin: 0;
+}
+
+/* Tugas Meta */
+.tugas-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2rem;
+}
+
+.meta-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.meta-item i {
+    color: var(--primary-blue);
+    font-size: 1rem;
+}
+
+.meta-item.deadline {
+    color: var(--warning);
+    font-weight: 600;
+}
+
+.meta-item.deadline i {
+    color: var(--warning);
+}
+
+.meta-item.success {
+    color: var(--success);
+    font-weight: 600;
+}
+
+.meta-item.success i {
+    color: var(--success);
+}
+
+/* Tugas Footer */
+.tugas-footer {
+    padding: 1.5rem 2rem;
+    background: #f8fafc;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+/* Action Buttons */
+.btn-action.tertiary {
+    background: #f1f5f9;
+    color: var(--text-secondary);
+    border: 2px solid var(--border-color);
+}
+
+.btn-action.tertiary:hover {
+    background: var(--white);
+    border-color: var(--text-secondary);
+    color: var(--text-primary);
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--text-secondary);
+}
+
+.empty-state i {
+    font-size: 4rem;
+    color: var(--border-color);
+    margin-bottom: 1rem;
+}
+
+.empty-state h3 {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+}
+
+.empty-state p {
+    font-size: 1rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .tugas-header {
+        flex-direction: column;
+    }
+
+    .tugas-status {
+        align-self: flex-start;
+    }
+
+    .tugas-meta {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .tugas-footer {
+        flex-direction: column;
+    }
+
+    .btn-action {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .tugas-priority {
+        font-size: 0.65rem;
+        padding: 0.4rem 2rem;
+    }
+
+    .tugas-grade {
+        padding: 0.75rem 1rem;
+    }
+
+    .grade-value {
+        font-size: 1.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .tugas-body {
+        padding: 1.5rem;
+    }
+
+    .tugas-header {
+        padding: 1.25rem 1.5rem;
+    }
+
+    .tugas-footer {
+        padding: 1.25rem 1.5rem;
+    }
+
+    .filter-tab {
+        white-space: nowrap;
+        margin: 0 0 0.25rem 0;
+    }
+}
