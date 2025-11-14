@@ -1,115 +1,41 @@
-import MySchuderApp from "./script";
+// ============================================
+// JADWAL.JS - Jadwal Page Module
+// ============================================
 
-// ========== JADWAL CONFIG ==========
-class JadwalConfig {
-  static NOTIFICATION_DURATION = 3000;
-  static ANIMATION_DURATION = 300;
-  static MONTHS = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 
-                   'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
-}
-
-// ========== JADWAL SEARCH MANAGER ==========
-class JadwalSearchManager {
-  constructor(searchInputId, searchClearId) {
-    this.searchInput = document.getElementById(searchInputId);
-    this.searchClear = document.getElementById(searchClearId);
-    this.initListeners();
-  }
-
-  initListeners() {
-    if (this.searchInput) {
-      this.searchInput.addEventListener("input", (e) => this.handleSearch(e));
-    }
-
-    if (this.searchClear) {
-      this.searchClear.addEventListener("click", () => this.clearSearch());
-    }
-  }
-
-  handleSearch(e) {
-    const searchTerm = e.target.value.toLowerCase();
-    
-    if (this.searchClear) {
-      this.searchClear.style.display = searchTerm.length > 0 ? "block" : "none";
-    }
-
-    this.filterSchedule(searchTerm);
-  }
-
-  clearSearch() {
-    if (this.searchInput) {
-      this.searchInput.value = "";
-      this.searchInput.focus();
-    }
-    if (this.searchClear) {
-      this.searchClear.style.display = "none";
-    }
-    this.filterSchedule("");
-  }
-
-  filterSchedule(searchTerm) {
-    const classItems = document.querySelectorAll(".class-item");
-    const upcomingCards = document.querySelectorAll(".upcoming-card");
-    
-    classItems.forEach(item => {
-      const className = item.querySelector(".class-name").textContent.toLowerCase();
-      const lecturer = item.querySelector(".class-lecturer").textContent.toLowerCase();
-      const room = item.querySelector(".class-room").textContent.toLowerCase();
-      
-      if (searchTerm === "" || className.includes(searchTerm) || 
-          lecturer.includes(searchTerm) || room.includes(searchTerm)) {
-        item.style.display = "flex";
-        item.style.animation = "fadeIn 0.3s ease";
-      } else {
-        item.style.display = "none";
-      }
-    });
-
-    upcomingCards.forEach(card => {
-      const title = card.querySelector("h4").textContent.toLowerCase();
-      const lecturer = card.querySelector(".card-lecturer").textContent.toLowerCase();
-      
-      if (searchTerm === "" || title.includes(searchTerm) || lecturer.includes(searchTerm)) {
-        card.style.display = "block";
-        card.style.animation = "fadeIn 0.3s ease";
-      } else {
-        card.style.display = "none";
-      }
-    });
-  }
-}
+import { 
+  AppConfig,
+  SidebarManager,
+  SearchManager,
+  NotificationManager,
+  ChatbotManager  // Import ChatbotManager
+} from './core.js';
 
 // ========== WEEK NAVIGATOR ==========
 class WeekNavigator {
-  constructor(prevBtnId, nextBtnId, currentWeekTextId) {
-    this.prevBtn = document.getElementById(prevBtnId);
-    this.nextBtn = document.getElementById(nextBtnId);
-    this.currentWeekText = document.getElementById(currentWeekTextId);
+  constructor() {
+    this.prevBtn = document.getElementById('prevWeek');
+    this.nextBtn = document.getElementById('nextWeek');
+    this.currentWeekText = document.getElementById('currentWeek');
     this.currentWeekOffset = 0;
     
     this.initListeners();
   }
 
   initListeners() {
-    if (this.prevBtn) {
-      this.prevBtn.addEventListener("click", () => this.navigatePrev());
-    }
-
-    if (this.nextBtn) {
-      this.nextBtn.addEventListener("click", () => this.navigateNext());
-    }
+    this.prevBtn?.addEventListener("click", () => this.navigatePrev());
+    this.nextBtn?.addEventListener("click", () => this.navigateNext());
   }
 
   navigatePrev() {
     this.currentWeekOffset--;
     this.updateWeekDisplay();
-    JadwalNotification.show("Menampilkan minggu sebelumnya", "info");
+    NotificationManager.getInstance().show("Menampilkan minggu sebelumnya", "info");
   }
 
   navigateNext() {
     this.currentWeekOffset++;
     this.updateWeekDisplay();
-    JadwalNotification.show("Menampilkan minggu berikutnya", "info");
+    NotificationManager.getInstance().show("Menampilkan minggu berikutnya", "info");
   }
 
   updateWeekDisplay() {
@@ -124,8 +50,8 @@ class WeekNavigator {
     
     const startDay = startOfWeek.getDate();
     const endDay = endOfWeek.getDate();
-    const startMonth = JadwalConfig.MONTHS[startOfWeek.getMonth()];
-    const endMonth = JadwalConfig.MONTHS[endOfWeek.getMonth()];
+    const startMonth = AppConfig.MONTHS[startOfWeek.getMonth()];
+    const endMonth = AppConfig.MONTHS[endOfWeek.getMonth()];
     const year = endOfWeek.getFullYear();
     
     let weekText = `${startDay}`;
@@ -150,7 +76,7 @@ class WeekNavigator {
       
       const dayDate = header.querySelector(".day-date");
       if (dayDate) {
-        dayDate.textContent = `${currentDay.getDate()} ${JadwalConfig.MONTHS[currentDay.getMonth()].substring(0, 3)}`;
+        dayDate.textContent = `${currentDay.getDate()} ${AppConfig.MONTHS[currentDay.getMonth()].substring(0, 3)}`;
       }
 
       const isToday = currentDay.toDateString() === new Date().toDateString();
@@ -164,8 +90,7 @@ class WeekNavigator {
         }
       } else if (!isToday) {
         header.classList.remove("today");
-        const badge = header.querySelector(".today-badge");
-        if (badge) badge.remove();
+        header.querySelector(".today-badge")?.remove();
       }
     });
   }
@@ -177,8 +102,9 @@ class WeekNavigator {
 
 // ========== VIEW SWITCHER ==========
 class ViewSwitcher {
-  constructor(viewBtnsSelector) {
-    this.viewBtns = document.querySelectorAll(viewBtnsSelector);
+  constructor(notificationManager) {
+    this.notificationManager = notificationManager;
+    this.viewBtns = document.querySelectorAll('.view-btn');
     this.initListeners();
   }
 
@@ -195,31 +121,25 @@ class ViewSwitcher {
     btn.classList.add("active");
     
     if (view === "day") {
-      JadwalNotification.show("Tampilan harian sedang dalam pengembangan", "info");
+      this.notificationManager.show("Tampilan harian sedang dalam pengembangan", "info");
     } else if (view === "month") {
-      JadwalNotification.show("Tampilan bulanan sedang dalam pengembangan", "info");
+      this.notificationManager.show("Tampilan bulanan sedang dalam pengembangan", "info");
     }
   }
 }
 
 // ========== EXPORT DIALOG MANAGER ==========
 class ExportDialogManager {
-  constructor() {
+  constructor(notificationManager) {
+    this.notificationManager = notificationManager;
     this.dialog = null;
+    this.ensureStyles();
   }
 
   show() {
     this.dialog = document.createElement("div");
     this.dialog.className = "export-dialog";
-    this.dialog.innerHTML = this.getDialogHTML();
-    
-    document.body.appendChild(this.dialog);
-    this.initDialogListeners();
-    this.addDialogStyles();
-  }
-
-  getDialogHTML() {
-    return `
+    this.dialog.innerHTML = `
       <div class="dialog-overlay"></div>
       <div class="dialog-content">
         <div class="dialog-header">
@@ -227,7 +147,7 @@ class ExportDialogManager {
           <button class="dialog-close"><i class="fas fa-times"></i></button>
         </div>
         <div class="dialog-body">
-          <p style="margin-bottom: 1.5rem; color: var(--text-secondary);">
+          <p style="margin-bottom: 1.5rem; color: #64748b;">
             Pilih format export untuk jadwal Anda:
           </p>
           <div class="export-options">
@@ -251,6 +171,9 @@ class ExportDialogManager {
         </div>
       </div>
     `;
+    
+    document.body.appendChild(this.dialog);
+    this.initDialogListeners();
   }
 
   initDialogListeners() {
@@ -258,10 +181,8 @@ class ExportDialogManager {
     const dialogOverlay = this.dialog.querySelector(".dialog-overlay");
     const exportOptions = this.dialog.querySelectorAll(".export-option");
     
-    const closeDialog = () => this.close();
-    
-    closeBtn.addEventListener("click", closeDialog);
-    dialogOverlay.addEventListener("click", closeDialog);
+    closeBtn?.addEventListener("click", () => this.close());
+    dialogOverlay?.addEventListener("click", () => this.close());
     
     exportOptions.forEach(option => {
       option.addEventListener("click", () => this.handleExport(option));
@@ -271,21 +192,19 @@ class ExportDialogManager {
   handleExport(option) {
     const format = option.getAttribute("data-format");
     this.close();
-    JadwalNotification.show(`Mengekspor jadwal ke format ${format.toUpperCase()}...`, "success");
+    this.notificationManager.show(`Mengekspor jadwal ke format ${format.toUpperCase()}...`, "success");
     
     setTimeout(() => {
-      JadwalNotification.show(`Jadwal berhasil diekspor! ✅`, "success");
+      this.notificationManager.show(`Jadwal berhasil diekspor! ✅`, "success");
     }, 2000);
   }
 
   close() {
-    if (this.dialog) {
-      this.dialog.remove();
-      this.dialog = null;
-    }
+    this.dialog?.remove();
+    this.dialog = null;
   }
 
-  addDialogStyles() {
+  ensureStyles() {
     if (document.querySelector("#exportDialogStyles")) return;
     
     const style = document.createElement("style");
@@ -320,7 +239,7 @@ class ExportDialogManager {
       
       .dialog-header {
         padding: 1.5rem 2rem;
-        border-bottom: 1px solid var(--border-color);
+        border-bottom: 1px solid #e2e8f0;
         display: flex;
         justify-content: space-between;
         align-items: center;
@@ -331,7 +250,6 @@ class ExportDialogManager {
         display: flex;
         align-items: center;
         gap: 0.75rem;
-        color: var(--text-primary);
         font-size: 1.3rem;
       }
       
@@ -339,11 +257,10 @@ class ExportDialogManager {
         background: none;
         border: none;
         font-size: 1.5rem;
-        color: var(--text-secondary);
         cursor: pointer;
         padding: 0.5rem;
         border-radius: 8px;
-        transition: var(--transition);
+        transition: all 0.3s;
       }
       
       .dialog-close:hover {
@@ -363,10 +280,10 @@ class ExportDialogManager {
       .export-option {
         padding: 1.5rem;
         background: #f8fafc;
-        border: 2px solid var(--border-color);
+        border: 2px solid #e2e8f0;
         border-radius: 12px;
         cursor: pointer;
-        transition: var(--transition);
+        transition: all 0.3s;
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -375,20 +292,19 @@ class ExportDialogManager {
       }
       
       .export-option:hover {
-        background: var(--light-blue);
-        border-color: var(--primary-blue);
+        background: #eff6ff;
+        border-color: #3b82f6;
         transform: translateY(-3px);
-        box-shadow: var(--shadow-md);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
       }
       
       .export-option i {
         font-size: 2.5rem;
-        color: var(--primary-blue);
+        color: #3b82f6;
       }
       
       .export-option span {
         font-weight: 600;
-        color: var(--text-primary);
       }
       
       @keyframes slideUp {
@@ -408,7 +324,8 @@ class ExportDialogManager {
 
 // ========== CLASS DETAIL HANDLER ==========
 class ClassDetailHandler {
-  constructor() {
+  constructor(notificationManager) {
+    this.notificationManager = notificationManager;
     this.initListeners();
   }
 
@@ -427,10 +344,10 @@ class ClassDetailHandler {
   }
 
   showClassDetail(classItem) {
-    const className = classItem.querySelector(".class-name").textContent;
-    const time = classItem.querySelector(".class-time").textContent;
-    const room = classItem.querySelector(".class-room").textContent;
-    const lecturer = classItem.querySelector(".class-lecturer").textContent;
+    const className = classItem.querySelector(".class-name")?.textContent || "";
+    const time = classItem.querySelector(".class-time")?.textContent || "";
+    const room = classItem.querySelector(".class-room")?.textContent || "";
+    const lecturer = classItem.querySelector(".class-lecturer")?.textContent || "";
     
     const detail = `
 📚 ${className}
@@ -443,25 +360,25 @@ Klik OK untuk join kelas atau Cancel untuk kembali.
     `;
     
     if (confirm(detail)) {
-      JadwalNotification.show(`Joining kelas: ${className}`, "success");
+      this.notificationManager.show(`Joining kelas: ${className}`, "success");
     }
   }
 
   handleJoin(joinBtn) {
     const card = joinBtn.closest(".upcoming-card");
-    const className = card.querySelector("h4").textContent;
+    const className = card?.querySelector("h4")?.textContent || "";
     
     if (joinBtn.classList.contains("active")) {
-      JadwalNotification.show(`Joining kelas: ${className}`, "success");
+      this.notificationManager.show(`Joining kelas: ${className}`, "success");
       setTimeout(() => {
-        JadwalNotification.show("Anda telah terhubung ke kelas! 🎓", "success");
+        this.notificationManager.show("Anda telah terhubung ke kelas! 🎓", "success");
       }, 1500);
     } else if (joinBtn.textContent.includes("Reminder")) {
-      JadwalNotification.show(`Reminder diset untuk: ${className}`, "success");
+      this.notificationManager.show(`Reminder diset untuk: ${className}`, "success");
     } else {
-      const time = card.querySelector(".card-info span:first-child").textContent;
-      const room = card.querySelector(".card-info span:last-child").textContent;
-      const lecturer = card.querySelector(".card-lecturer").textContent;
+      const time = card?.querySelector(".card-info span:first-child")?.textContent || "";
+      const room = card?.querySelector(".card-info span:last-child")?.textContent || "";
+      const lecturer = card?.querySelector(".card-lecturer")?.textContent || "";
       this.showClassDetailFromCard(className, time, room, lecturer);
     }
   }
@@ -478,150 +395,121 @@ Klik OK untuk join kelas atau Cancel untuk kembali.
     `;
     
     if (confirm(detail)) {
-      JadwalNotification.show(`Joining kelas: ${className}`, "success");
+      NotificationManager.getInstance().show(`Joining kelas: ${className}`, "success");
     }
   }
 }
 
-// ========== JADWAL NOTIFICATION ==========
-class JadwalNotification {
-  static show(message, type = "info") {
-    const notification = document.createElement("div");
-    notification.className = `notification ${type}`;
+// ========== JADWAL FILTER ==========
+class JadwalFilter {
+  constructor(searchManager) {
+    this.searchManager = searchManager;
+  }
+
+  filter(searchTerm) {
+    const classItems = document.querySelectorAll(".class-item");
+    const upcomingCards = document.querySelectorAll(".upcoming-card");
     
-    const icon = type === "success" ? "check-circle" : type === "warning" ? "exclamation-triangle" : "info-circle";
-    
-    notification.innerHTML = `
-      <i class="fas fa-${icon}"></i>
-      <span>${message}</span>
-    `;
-    
-    const bgColor = type === "success" ? "var(--success)" : type === "warning" ? "var(--warning)" : "var(--primary-blue)";
-    
-    notification.style.cssText = `
-      position: fixed;
-      top: 90px;
-      right: 20px;
-      background: ${bgColor};
-      color: white;
-      padding: 1rem 1.5rem;
-      border-radius: 12px;
-      box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      z-index: 10001;
-      animation: slideIn 0.3s ease;
-      max-width: 400px;
-    `;
-    
-    document.body.appendChild(notification);
-    
-    setTimeout(() => {
-      notification.style.animation = "slideOut 0.3s ease";
-      setTimeout(() => notification.remove(), 300);
-    }, JadwalConfig.NOTIFICATION_DURATION);
+    classItems.forEach(item => {
+      const className = item.querySelector(".class-name")?.textContent.toLowerCase() || "";
+      const lecturer = item.querySelector(".class-lecturer")?.textContent.toLowerCase() || "";
+      const room = item.querySelector(".class-room")?.textContent.toLowerCase() || "";
+      
+      if (searchTerm === "" || className.includes(searchTerm) || 
+          lecturer.includes(searchTerm) || room.includes(searchTerm)) {
+        item.style.display = "flex";
+        item.style.animation = "fadeIn 0.3s ease";
+      } else {
+        item.style.display = "none";
+      }
+    });
+
+    upcomingCards.forEach(card => {
+      const title = card.querySelector("h4")?.textContent.toLowerCase() || "";
+      const lecturer = card.querySelector(".card-lecturer")?.textContent.toLowerCase() || "";
+      
+      if (searchTerm === "" || title.includes(searchTerm) || lecturer.includes(searchTerm)) {
+        card.style.display = "block";
+        card.style.animation = "fadeIn 0.3s ease";
+      } else {
+        card.style.display = "none";
+      }
+    });
   }
 }
 
 // ========== JADWAL ACTION HANDLER ==========
 class JadwalActionHandler {
-  constructor() {
-    this.exportBtn = document.getElementById('exportBtn');
-    this.addScheduleBtn = document.getElementById('addScheduleBtn');
-    this.exportDialog = new ExportDialogManager();
-    
+  constructor(notificationManager, exportDialog) {
+    this.notificationManager = notificationManager;
+    this.exportDialog = exportDialog;
     this.initListeners();
   }
 
   initListeners() {
-    if (this.exportBtn) {
-      this.exportBtn.addEventListener("click", () => this.exportDialog.show());
-    }
-
-    if (this.addScheduleBtn) {
-      this.addScheduleBtn.addEventListener("click", () => {
-        JadwalNotification.show("Fitur tambah jadwal akan segera hadir! 🎉", "info");
-      });
-    }
-  }
-}
-
-// ========== JADWAL ANIMATION STYLES ==========
-class JadwalAnimationStyles {
-  static init() {
-    if (document.querySelector("#jadwalAnimationStyles")) return;
+    const exportBtn = document.getElementById('exportBtn');
+    const addScheduleBtn = document.getElementById('addScheduleBtn');
     
-    const style = document.createElement("style");
-    style.id = "jadwalAnimationStyles";
-    style.textContent = `
-      @keyframes fadeIn {
-        from {
-          opacity: 0;
-          transform: translateY(20px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
-      
-      @keyframes slideIn {
-        from {
-          transform: translateX(400px);
-          opacity: 0;
-        }
-        to {
-          transform: translateX(0);
-          opacity: 1;
-        }
-      }
-      
-      @keyframes slideOut {
-        from {
-          transform: translateX(0);
-          opacity: 1;
-        }
-        to {
-          transform: translateX(400px);
-          opacity: 0;
-        }
-      }
-    `;
-    document.head.appendChild(style);
+    exportBtn?.addEventListener("click", () => this.exportDialog.show());
+    addScheduleBtn?.addEventListener("click", () => {
+      this.notificationManager.show("Fitur tambah jadwal akan segera hadir! 🎉", "info");
+    });
   }
 }
 
 // ========== JADWAL APP CLASS ==========
 class JadwalApp {
   constructor() {
+    // Prevent multiple initialization
+    if (window.__jadwalAppInitialized) {
+      console.warn("JadwalApp already initialized");
+      return;
+    }
+
+    this.notificationManager = NotificationManager.getInstance();
+    this.sidebar = SidebarManager.getInstance();
+    this.chatbot = ChatbotManager.getInstance(); // Akses chatbot singleton
+    this.exportDialog = new ExportDialogManager(this.notificationManager);
     
-    this.search = new JadwalSearchManager('searchInput', 'searchClear');
-    this.weekNavigator = new WeekNavigator('prevWeek', 'nextWeek', 'currentWeek');
-    this.viewSwitcher = new ViewSwitcher('.view-btn');
-    this.classDetailHandler = new ClassDetailHandler();
-    this.actionHandler = new JadwalActionHandler();
+    this.jadwalFilter = new JadwalFilter();
+    const filterCallback = () => {
+      const searchTerm = this.searchManager.getSearchTerm();
+      this.jadwalFilter.filter(searchTerm);
+    };
+    
+    this.searchManager = new SearchManager('searchInput', 'searchClear', filterCallback);
+    this.weekNavigator = new WeekNavigator();
+    this.viewSwitcher = new ViewSwitcher(this.notificationManager);
+    this.classDetailHandler = new ClassDetailHandler(this.notificationManager);
+    this.actionHandler = new JadwalActionHandler(this.notificationManager, this.exportDialog);
     
     this.init();
+    window.__jadwalAppInitialized = true;
   }
 
   init() {
-    JadwalAnimationStyles.init();
     this.weekNavigator.init();
-    this.initResponsive();
     console.log("✅ Jadwal Page Loaded Successfully");
-  }
-
-  initResponsive() {
-    window.addEventListener("resize", () => {
-      if (window.innerWidth > 768) {
-        this.sidebar.close();
-      }
-    });
   }
 }
 
 // ========== INITIALIZE JADWAL APP ==========
-window.addEventListener("load", () => {
-  window.jadwalApp = new JadwalApp();
-});
+let jadwalAppInstance = null;
+
+function initJadwalApp() {
+  if (!jadwalAppInstance && document.querySelector('.class-item, .upcoming-card')) {
+    jadwalAppInstance = new JadwalApp();
+    window.jadwalApp = jadwalAppInstance;
+  }
+  return jadwalAppInstance;
+}
+
+// Auto-initialize
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initJadwalApp);
+} else {
+  initJadwalApp();
+}
+
+export default JadwalApp;
+export { initJadwalApp };

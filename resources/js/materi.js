@@ -1,69 +1,33 @@
-import MySchuderApp from './script.js';
+// ============================================
+// MATERI.JS - Materi Page Module
+// ============================================
 
-document.addEventListener('DOMContentLoaded', () => {
-  const app = new MateriApp();       // ← Gunakan langsung
-});
-
-// ========== MATERI CONFIG ==========
-class MateriConfig {
-  static NOTIFICATION_DURATION = 3000;
-  static ANIMATION_DURATION = 300;
-}
+import { 
+  AppConfig, 
+  SidebarManager,
+  SearchManager,
+  NotificationManager,
+  ChatbotManager  // Import ChatbotManager
+} from './core.js';
 
 // ========== MATERI FILTER MANAGER ==========
 class MateriFilterManager {
-  constructor(config = {}) {
-    this.searchInput = document.getElementById(config.searchInputId || 'searchInput');
-    this.searchClear = document.getElementById(config.searchClearId || 'searchClear');
-    this.filterTabs = document.querySelectorAll(config.filterTabsSelector || '.filter-tab');
-    this.categoryFilter = document.getElementById(config.categoryFilterId || 'categoryFilter');
-    this.sortFilter = document.getElementById(config.sortFilterId || 'sortFilter');
-    this.materiGrid = document.getElementById(config.materiGridId || 'materiGrid');
+  constructor() {
+    this.filterTabs = document.querySelectorAll('.filter-tab');
+    this.categoryFilter = document.getElementById('categoryFilter');
+    this.sortFilter = document.getElementById('sortFilter');
+    this.materiGrid = document.getElementById('materiGrid');
     
     this.initListeners();
   }
 
   initListeners() {
-    if (this.searchInput) {
-      this.searchInput.addEventListener("input", (e) => this.handleSearch(e));
-    }
-
-    if (this.searchClear) {
-      this.searchClear.addEventListener("click", () => this.clearSearch());
-    }
-
     this.filterTabs.forEach(tab => {
       tab.addEventListener("click", () => this.handleFilterTab(tab));
     });
 
-    if (this.categoryFilter) {
-      this.categoryFilter.addEventListener("change", () => this.filterMateri());
-    }
-
-    if (this.sortFilter) {
-      this.sortFilter.addEventListener("change", () => this.sortMateri());
-    }
-  }
-
-  handleSearch(e) {
-    const searchTerm = e.target.value.toLowerCase();
-    
-    if (this.searchClear) {
-      this.searchClear.style.display = searchTerm.length > 0 ? "block" : "none";
-    }
-
-    this.filterMateri();
-  }
-
-  clearSearch() {
-    if (this.searchInput) {
-      this.searchInput.value = "";
-      this.searchInput.focus();
-    }
-    if (this.searchClear) {
-      this.searchClear.style.display = "none";
-    }
-    this.filterMateri();
+    this.categoryFilter?.addEventListener("change", () => this.filterMateri());
+    this.sortFilter?.addEventListener("change", () => this.sortMateri());
   }
 
   handleFilterTab(tab) {
@@ -72,17 +36,16 @@ class MateriFilterManager {
     this.filterMateri();
   }
 
-  filterMateri() {
-    const searchTerm = this.searchInput ? this.searchInput.value.toLowerCase() : "";
+  filterMateri(searchTerm = "") {
     const activeTab = document.querySelector(".filter-tab.active");
-    const filterType = activeTab ? activeTab.getAttribute("data-filter") : "all";
-    const category = this.categoryFilter ? this.categoryFilter.value : "all";
+    const filterType = activeTab?.getAttribute("data-filter") || "all";
+    const category = this.categoryFilter?.value || "all";
     
     const cards = document.querySelectorAll(".materi-card");
     
     cards.forEach(card => {
-      const title = card.querySelector("h3").textContent.toLowerCase();
-      const description = card.querySelector("p").textContent.toLowerCase();
+      const title = card.querySelector("h3")?.textContent.toLowerCase() || "";
+      const description = card.querySelector("p")?.textContent.toLowerCase() || "";
       const cardCategory = card.getAttribute("data-category");
       const cardStatus = card.getAttribute("data-status");
       
@@ -106,27 +69,27 @@ class MateriFilterManager {
         }
       }
       
+      card.style.display = showCard ? "block" : "none";
       if (showCard) {
-        card.style.display = "block";
         card.style.animation = "fadeIn 0.3s ease";
-      } else {
-        card.style.display = "none";
       }
     });
   }
 
   sortMateri() {
-    const sortValue = this.sortFilter ? this.sortFilter.value : "newest";
+    if (!this.materiGrid) return;
+    
+    const sortValue = this.sortFilter?.value || "newest";
     const cards = Array.from(document.querySelectorAll(".materi-card"));
     
     cards.sort((a, b) => {
       if (sortValue === "name") {
-        const nameA = a.querySelector("h3").textContent;
-        const nameB = b.querySelector("h3").textContent;
+        const nameA = a.querySelector("h3")?.textContent || "";
+        const nameB = b.querySelector("h3")?.textContent || "";
         return nameA.localeCompare(nameB);
       } else if (sortValue === "progress") {
-        const progressA = parseFloat(a.querySelector(".progress-text").textContent);
-        const progressB = parseFloat(b.querySelector(".progress-text").textContent);
+        const progressA = parseFloat(a.querySelector(".progress-text")?.textContent || "0");
+        const progressB = parseFloat(b.querySelector(".progress-text")?.textContent || "0");
         return progressB - progressA;
       }
       return 0;
@@ -140,7 +103,8 @@ class MateriFilterManager {
 
 // ========== MATERI CARD HANDLER ==========
 class MateriCardHandler {
-  constructor() {
+  constructor(notificationManager) {
+    this.notificationManager = notificationManager;
     this.initListeners();
   }
 
@@ -160,21 +124,25 @@ class MateriCardHandler {
 
   handleContinue(btn) {
     const card = btn.closest(".materi-card");
-    const materiTitle = card.querySelector("h3").textContent;
-    MateriNotification.show(`Membuka materi: ${materiTitle}`, "success");
+    const materiTitle = card?.querySelector("h3")?.textContent;
+    if (materiTitle) {
+      this.notificationManager.show(`Membuka materi: ${materiTitle}`, "success");
+    }
   }
 
   handleInfo(btn) {
     const card = btn.closest(".materi-card");
-    this.showMateriDetail(card);
+    if (card) {
+      this.showMateriDetail(card);
+    }
   }
 
   showMateriDetail(card) {
-    const title = card.querySelector("h3").textContent;
-    const description = card.querySelector("p").textContent;
-    const modules = card.querySelector(".card-meta span:first-child").textContent;
-    const duration = card.querySelector(".card-meta span:last-child").textContent;
-    const progress = card.querySelector(".progress-text").textContent;
+    const title = card.querySelector("h3")?.textContent || "";
+    const description = card.querySelector("p")?.textContent || "";
+    const modules = card.querySelector(".card-meta span:first-child")?.textContent || "";
+    const duration = card.querySelector(".card-meta span:last-child")?.textContent || "";
+    const progress = card.querySelector(".progress-text")?.textContent || "";
     
     const detail = `
 📚 ${title}
@@ -189,133 +157,72 @@ Klik OK untuk membuka materi ini.
     `;
     
     if (confirm(detail)) {
-      MateriNotification.show(`Membuka materi: ${title}`, "success");
+      this.notificationManager.show(`Membuka materi: ${title}`, "success");
     }
-  }
-}
-
-// ========== MATERI NOTIFICATION ==========
-class MateriNotification {
-  static show(message, type = "info") {
-    const notification = document.createElement("div");
-    notification.className = `notification ${type}`;
-    notification.innerHTML = `
-      <i class="fas fa-${type === 'success' ? 'check-circle' : 'info-circle'}"></i>
-      <span>${message}</span>
-    `;
-    
-    notification.style.cssText = `
-      position: fixed;
-      top: 90px;
-      right: 20px;
-      background: ${type === 'success' ? 'var(--success)' : 'var(--primary-blue)'};
-      color: white;
-      padding: 1rem 1.5rem;
-      border-radius: 12px;
-      box-shadow: var(--shadow-xl);
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      z-index: 10000;
-      animation: slideIn 0.3s ease;
-    `;
-    
-    document.body.appendChild(notification);
-    
-    setTimeout(() => {
-      notification.style.animation = "slideOut 0.3s ease";
-      setTimeout(() => notification.remove(), 300);
-    }, MateriConfig.NOTIFICATION_DURATION);
   }
 }
 
 // ========== MATERI ACTION HANDLER ==========
 class MateriActionHandler {
-  constructor() {
+  constructor(notificationManager) {
+    this.notificationManager = notificationManager;
     this.addMateriBtn = document.getElementById('addMateriBtn');
     this.initListeners();
   }
 
   initListeners() {
-    if (this.addMateriBtn) {
-      this.addMateriBtn.addEventListener("click", () => {
-        MateriNotification.show("Fitur tambah materi akan segera hadir! 🎉", "info");
-      });
-    }
-  }
-}
-
-// ========== MATERI ANIMATION STYLES ==========
-class MateriAnimationStyles {
-  static init() {
-    if (document.querySelector("#materiAnimationStyles")) return;
-    
-    const style = document.createElement('style');
-    style.id = "materiAnimationStyles";
-    style.textContent = `
-      @keyframes fadeIn {
-        from {
-          opacity: 0;
-          transform: translateY(20px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
-      
-      @keyframes slideIn {
-        from {
-          transform: translateX(400px);
-          opacity: 0;
-        }
-        to {
-          transform: translateX(0);
-          opacity: 1;
-        }
-      }
-      
-      @keyframes slideOut {
-        from {
-          transform: translateX(0);
-          opacity: 1;
-        }
-        to {
-          transform: translateX(400px);
-          opacity: 0;
-        }
-      }
-    `;
-    document.head.appendChild(style);
+    this.addMateriBtn?.addEventListener("click", () => {
+      this.notificationManager.show("Fitur tambah materi akan segera hadir! 🎉", "info");
+    });
   }
 }
 
 // ========== MATERI APP CLASS ==========
 class MateriApp {
   constructor() {
+    // Prevent multiple initialization
+    if (window.__materiAppInitialized) {
+      console.warn("MateriApp already initialized");
+      return;
+    }
+
+    this.notificationManager = NotificationManager.getInstance();
+    this.sidebar = SidebarManager.getInstance();
+    this.chatbot = ChatbotManager.getInstance(); // Akses chatbot singleton
+    
+    const filterCallback = (searchTerm) => this.filter.filterMateri(searchTerm);
+    this.search = new SearchManager('searchInput', 'searchClear', filterCallback);
+    
     this.filter = new MateriFilterManager();
-    this.cardHandler = new MateriCardHandler();
-    this.actionHandler = new MateriActionHandler();
+    this.cardHandler = new MateriCardHandler(this.notificationManager);
+    this.actionHandler = new MateriActionHandler(this.notificationManager);
     
     this.init();
+    window.__materiAppInitialized = true;
   }
 
   init() {
-    MateriAnimationStyles.init();
-    this.initResponsive();
     console.log("✅ Materi Page Loaded Successfully");
-  }
-
-  initResponsive() {
-    window.addEventListener("resize", () => {
-      if (window.innerWidth > 768) {
-        this.sidebar.close();
-      }
-    });
   }
 }
 
 // ========== INITIALIZE MATERI APP ==========
-window.addEventListener("load", () => {
-  window.materiApp = new MateriApp();
-});
+let materiAppInstance = null;
+
+function initMateriApp() {
+  if (!materiAppInstance && document.querySelector('.materi-card')) {
+    materiAppInstance = new MateriApp();
+    window.materiApp = materiAppInstance;
+  }
+  return materiAppInstance;
+}
+
+// Auto-initialize
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initMateriApp);
+} else {
+  initMateriApp();
+}
+
+export default MateriApp;
+export { initMateriApp };

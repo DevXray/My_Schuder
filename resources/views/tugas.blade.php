@@ -7,7 +7,7 @@
     <title>Tugas - My Schuder</title>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    @vite(['resources/css/dashboard.css', 'resources/css/tugas.css', 'resources/css/materi.css','resources/js/tugas.js'])
+    @vite(['resources/css/dashboard.css', 'resources/css/tugas.css', 'resources/css/materi.css','resources/js/app.js'])
 </head>
 <body>
     <!-- Header -->
@@ -319,6 +319,7 @@
     <div class="overlay" id="overlay"></div>
 
     <!-- Loading Screen -->
-    
+    @include('partials.loadingscreen')
+
 </body>
 </html>
