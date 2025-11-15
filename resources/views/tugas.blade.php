@@ -7,7 +7,7 @@
     <title>Tugas - My Schuder</title>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    @vite(['resources/css/dashboard.css', 'resources/css/tugas.css', 'resources/css/materi.css','resources/js/app.js'])
+    @vite(['resources/css/dashboard.css', 'resources/css/pages.css','resources/js/app.js'])
 </head>
 <body>
     <!-- Header -->
@@ -222,20 +222,23 @@
 
             <!-- Tugas Item 4 - Graded -->
             <div class="tugas-item" data-status="graded" data-priority="low">
-                <div class="tugas-grade excellent">
-                    <i class="fas fa-trophy"></i>
-                    <span class="grade-value">92</span>
-                    <span class="grade-label">/ 100</span>
-                </div>
                 <div class="tugas-header">
                     <div class="tugas-info">
-                        <h3>Implementasi RESTful API</h3>
+                        <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem;">
+                            <h3 style="margin: 0;">Implementasi RESTful API</h3>
+                            <div class="tugas-grade excellent">
+                                <i class="fas fa-trophy"></i>
+                                <span class="grade-value">92</span>
+                                <span class="grade-label">/ 100</span>
+                            </div>
+                        </div>
                         <p class="tugas-subject"><i class="fas fa-book"></i> Pemrograman Web</p>
                     </div>
                     <div class="tugas-status graded">
                         <i class="fas fa-star"></i> Sudah Dinilai
                     </div>
                 </div>
+                
                 <div class="tugas-body">
                     <p class="tugas-description">
                         Implementasi RESTful API dengan authentication, validation, dan dokumentasi lengkap.
@@ -267,14 +270,16 @@
 
             <!-- Tugas Item 5 - Graded (Lower Score) -->
             <div class="tugas-item" data-status="graded" data-priority="low">
-                <div class="tugas-grade good">
-                    <i class="fas fa-star"></i>
-                    <span class="grade-value">78</span>
-                    <span class="grade-label">/ 100</span>
-                </div>
                 <div class="tugas-header">
                     <div class="tugas-info">
-                        <h3>Laporan Praktikum Jaringan</h3>
+                        <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem;">
+                            <h3 style="margin: 0;">Laporan Praktikum Jaringan</h3>
+                            <div class="tugas-grade good">
+                                <i class="fas fa-star"></i>
+                                <span class="grade-value">78</span>
+                                <span class="grade-label">/ 100</span>
+                            </div>
+                        </div>
                         <p class="tugas-subject"><i class="fas fa-book"></i> Jaringan Komputer</p>
                     </div>
                     <div class="tugas-status graded">
