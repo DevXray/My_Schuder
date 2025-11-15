@@ -15,47 +15,7 @@
 </head>
 <body>
     <!-- Header -->
-    <header class="header">
-        <div class="header-content">
-            <div class="header-left">
-                <button class="menu-btn" id="menuBtn" aria-label="Toggle Menu">
-                    <i class="fas fa-bars"></i>
-                </button>
-                <div class="logo">
-                        <img class= "logo-icon" src="{{ Vite::asset('resources/assets/logo_akademik_hd.png') }}" alt="Logo My Schuder" />
-                    <div class="logo-text">
-                        <h1>My Schuder</h1>
-                        <p>Portal Pembelajaran</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="header-center">
-                <div class="search-box">
-                    <i class="fas fa-search"></i>
-                    <input type="text" id="searchInput" placeholder="Cari materi, tugas, atau diskusi...">
-                    <button class="search-clear" id="searchClear" style="display: none;">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-            </div>
-
-            <div class="header-right">
-                <button class="notification-btn" id="notificationBtn" aria-label="Notifications">
-                    <i class="fas fa-bell"></i>
-                    <span class="badge">3</span>
-                </button>
-                <div class="user-profile" id="userProfile">
-                    <div class="user-avatar">A</div>
-                    <div class="user-info">
-                        <p class="user-name">Ahmad Student</p>
-                        <p class="user-role">Siswa</p>
-                    </div>
-                    <i class="fas fa-chevron-down"></i>
-                </div>
-            </div>
-        </div>
-    </header>
+    @include('partials.header')
 
     <!-- Sidebar -->
     @include('partials.sidebar')
@@ -342,61 +302,8 @@
         </section>
     </main>
 
-    <!-- Chatbot -->
-    <div class="chatbot" id="chatbot">
-        <div class="chatbot-header">
-            <div class="chatbot-title">
-                <i class="fas fa-robot"></i>
-                <span>AI kecerdasan buatan artificial intelligence</span>
-            </div>
-            
-        </div>
-        <div class="chatbot-body" id="chatbotBody">
-            <div class="chat-message bot">
-                <div class="message-avatar">
-                    <i class="fas fa-robot"></i>
-                </div>
-                <div class="message-content">
-                    <p>Halo! 👋 Saya Asisten Virtual AI. Ada yang bisa saya bantu hari ini?</p>
-                    <span class="message-time">Baru saja</span>
-                </div>
-            </div>
-            <div class="quick-replies">
-                <button class="quick-reply-btn" data-message="Info materi">
-                    <i class="fas fa-book"></i> Info Materi
-                </button>
-                <button class="quick-reply-btn" data-message="Status tugas">
-                    <i class="fas fa-tasks"></i> Status Tugas
-                </button>
-                <button class="quick-reply-btn" data-message="Jadwal hari ini">
-                    <i class="fas fa-calendar"></i> Jadwal
-                </button>
-            </div>
-        </div>
-        <div class="chatbot-typing" id="chatbotTyping" style="display: none;">
-            <div class="typing-indicator">
-                <span></span>
-                <span></span>
-                <span></span>
-            </div>
-            <span class="typing-text">Asisten sedang mengetik...</span>
-        </div>
-        <div class="chatbot-footer">
-            <input type="text" id="chatInput" placeholder="Ketik pesan..." autocomplete="off">
-            <button class="chat-voice-btn" id="chatVoiceBtn" aria-label="Voice Input">
-                <i class="fas fa-microphone"></i>
-            </button>
-            <button class="chat-send-btn" id="chatSendBtn" aria-label="Send Message">
-                <i class="fas fa-paper-plane"></i>
-            </button>
-        </div>
-    </div>
-
-    <button class="chatbot-toggle" id="chatbotToggle" aria-label="Open Chat">
-        <i class="fas fa-comments"></i>
-        <span class="chat-notification">1</span>
-        <span class="status-dot" aria-hidden="true"></span>
-    </button>
+    <!--chatbot-->
+    @include('partials.chatbot')
 
     <!-- Overlay -->
     <div class="overlay" id="overlay"></div>

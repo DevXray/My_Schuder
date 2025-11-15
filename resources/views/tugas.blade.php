@@ -7,51 +7,11 @@
     <title>Tugas - My Schuder</title>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    @vite(['resources/css/dashboard.css', 'resources/css/tugas.css', 'resources/css/materi.css','resources/js/tugas.js'])
+    @vite(['resources/css/dashboard.css', 'resources/css/pages.css','resources/js/app.js'])
 </head>
 <body>
     <!-- Header -->
-    <header class="header">
-        <div class="header-content">
-            <div class="header-left">
-                <button class="menu-btn" id="menuBtn" aria-label="Toggle Menu">
-                    <i class="fas fa-bars"></i>
-                </button>
-                <div class="logo">
-                    <img class="logo-icon" src="{{ Vite::asset('resources/assets/logo_akademik_hd.png') }}" alt="Logo My Schuder" />
-                    <div class="logo-text">
-                        <h1>My Schuder</h1>
-                        <p>Portal Pembelajaran</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="header-center">
-                <div class="search-box">
-                    <i class="fas fa-search"></i>
-                    <input type="text" id="searchInput" placeholder="Cari tugas...">
-                    <button class="search-clear" id="searchClear" style="display: none;">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-            </div>
-
-            <div class="header-right">
-                <button class="notification-btn" id="notificationBtn" aria-label="Notifications">
-                    <i class="fas fa-bell"></i>
-                    <span class="badge">3</span>
-                </button>
-                <div class="user-profile" id="userProfile">
-                    <div class="user-avatar">A</div>
-                    <div class="user-info">
-                        <p class="user-name">Ahmad Student</p>
-                        <p class="user-role">Siswa</p>
-                    </div>
-                    <i class="fas fa-chevron-down"></i>
-                </div>
-            </div>
-        </div>
-    </header>
+    @include('partials.header')
 
     <!-- Sidebar -->
     @include('partials.sidebar')
@@ -262,20 +222,23 @@
 
             <!-- Tugas Item 4 - Graded -->
             <div class="tugas-item" data-status="graded" data-priority="low">
-                <div class="tugas-grade excellent">
-                    <i class="fas fa-trophy"></i>
-                    <span class="grade-value">92</span>
-                    <span class="grade-label">/ 100</span>
-                </div>
                 <div class="tugas-header">
                     <div class="tugas-info">
-                        <h3>Implementasi RESTful API</h3>
+                        <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem;">
+                            <h3 style="margin: 0;">Implementasi RESTful API</h3>
+                            <div class="tugas-grade excellent">
+                                <i class="fas fa-trophy"></i>
+                                <span class="grade-value">92</span>
+                                <span class="grade-label">/ 100</span>
+                            </div>
+                        </div>
                         <p class="tugas-subject"><i class="fas fa-book"></i> Pemrograman Web</p>
                     </div>
                     <div class="tugas-status graded">
                         <i class="fas fa-star"></i> Sudah Dinilai
                     </div>
                 </div>
+                
                 <div class="tugas-body">
                     <p class="tugas-description">
                         Implementasi RESTful API dengan authentication, validation, dan dokumentasi lengkap.
@@ -307,14 +270,16 @@
 
             <!-- Tugas Item 5 - Graded (Lower Score) -->
             <div class="tugas-item" data-status="graded" data-priority="low">
-                <div class="tugas-grade good">
-                    <i class="fas fa-star"></i>
-                    <span class="grade-value">78</span>
-                    <span class="grade-label">/ 100</span>
-                </div>
                 <div class="tugas-header">
                     <div class="tugas-info">
-                        <h3>Laporan Praktikum Jaringan</h3>
+                        <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem;">
+                            <h3 style="margin: 0;">Laporan Praktikum Jaringan</h3>
+                            <div class="tugas-grade good">
+                                <i class="fas fa-star"></i>
+                                <span class="grade-value">78</span>
+                                <span class="grade-label">/ 100</span>
+                            </div>
+                        </div>
                         <p class="tugas-subject"><i class="fas fa-book"></i> Jaringan Komputer</p>
                     </div>
                     <div class="tugas-status graded">
@@ -352,7 +317,14 @@
         </section>
     </main>
 
+    <!--chatbot-->
+    @include('partials.chatbot')
+
     <!-- Overlay -->
     <div class="overlay" id="overlay"></div>
+
+    <!-- Loading Screen -->
+    @include('partials.loadingscreen')
+
 </body>
 </html>

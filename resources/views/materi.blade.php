@@ -7,51 +7,11 @@
     <title>Materi Kelas - My Schuder</title>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    @vite(['resources/css/dashboard.css', 'resources/css/materi.css', 'resources/js/materi.js'])
+    @vite(['resources/css/dashboard.css', 'resources/css/pages.css', 'resources/js/app.js'])
 </head>
 <body>
     <!-- Header -->
-    <header class="header">
-        <div class="header-content">
-            <div class="header-left">
-                <button class="menu-btn" id="menuBtn" aria-label="Toggle Menu">
-                    <i class="fas fa-bars"></i>
-                </button>
-                <div class="logo">
-                    <img class="logo-icon" src="{{ Vite::asset('resources/assets/logo_akademik_hd.png') }}" alt="Logo My Schuder" />
-                    <div class="logo-text">
-                        <h1>My Schuder</h1>
-                        <p>Portal Pembelajaran</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="header-center">
-                <div class="search-box">
-                    <i class="fas fa-search"></i>
-                    <input type="text" id="searchInput" placeholder="Cari materi...">
-                    <button class="search-clear" id="searchClear" style="display: none;">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-            </div>
-
-            <div class="header-right">
-                <button class="notification-btn" id="notificationBtn" aria-label="Notifications">
-                    <i class="fas fa-bell"></i>
-                    <span class="badge">3</span>
-                </button>
-                <div class="user-profile" id="userProfile">
-                    <div class="user-avatar">A</div>
-                    <div class="user-info">
-                        <p class="user-name">Ahmad Student</p>
-                        <p class="user-role">Siswa</p>
-                    </div>
-                    <i class="fas fa-chevron-down"></i>
-                </div>
-            </div>
-        </div>
-    </header>
+    @include('partials.header')
 
     <!-- Sidebar -->
     @include('partials.sidebar')
@@ -309,6 +269,9 @@
             </div>
         </section>
     </main>
+
+    <!--chatbot-->
+    @include('partials.chatbot')
 
     <!-- Overlay -->
     <div class="overlay" id="overlay"></div>
