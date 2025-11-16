@@ -10,7 +10,7 @@
 
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    @vite(['resources/css/dashboard.css', 'resources/js/script.js'])
+    @vite(['resources/css/dashboard.css', 'resources/js/app.js'])
 
 </head>
 <body>

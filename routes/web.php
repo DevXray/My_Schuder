@@ -30,14 +30,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return view('jadwal');
     })->name('jadwal.index');
     
-    // Peserta (tambahkan jika ada)
+    // Peserta
     Route::get('/peserta', function () {
-        return view('peserta');
+        return view('dashboard'); // Temporary, return dashboard dulu
     })->name('peserta.index');
     
-    // Pengaturan (tambahkan jika ada)
+    // Pengaturan
     Route::get('/pengaturan', function () {
-        return view('pengaturan');
+        return view('dashboard'); // Temporary, return dashboard dulu
     })->name('pengaturan.index');
     
     // Profile Routes
