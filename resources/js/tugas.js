@@ -1,5 +1,5 @@
 // ============================================
-// TUGAS.JS - Tugas Page Module
+// TUGAS.JS - Tugas Page Module (FIXED)
 // ============================================
 
 import { 
@@ -7,7 +7,7 @@ import {
   SidebarManager,
   SearchManager,
   NotificationManager,
-  ChatbotManager  // Import ChatbotManager
+  ChatbotManager
 } from './core.js';
 
 // ========== FILTER TAB MANAGER ==========
@@ -15,12 +15,15 @@ class FilterTabManager {
   constructor(filterCallback) {
     this.tabs = document.querySelectorAll('.filter-tab');
     this.filterCallback = filterCallback;
+    this.boundHandlers = new Map();
     this.initListeners();
   }
 
   initListeners() {
     this.tabs.forEach(tab => {
-      tab.addEventListener("click", () => this.handleTabClick(tab));
+      const handler = () => this.handleTabClick(tab);
+      this.boundHandlers.set(tab, handler);
+      tab.addEventListener("click", handler);
     });
   }
 
@@ -33,6 +36,16 @@ class FilterTabManager {
   getActiveStatus() {
     const activeTab = document.querySelector(".filter-tab.active");
     return activeTab?.getAttribute("data-status") || "all";
+  }
+
+  destroy() {
+    this.tabs.forEach(tab => {
+      const handler = this.boundHandlers.get(tab);
+      if (handler) {
+        tab.removeEventListener("click", handler);
+      }
+    });
+    this.boundHandlers.clear();
   }
 }
 
@@ -99,6 +112,10 @@ class TugasFilterManager {
       emptyState?.remove();
     }
   }
+
+  destroy() {
+    // Cleanup jika diperlukan
+  }
 }
 
 // ========== UPLOAD DIALOG ==========
@@ -106,10 +123,22 @@ class UploadDialog {
   constructor(notificationManager) {
     this.notificationManager = notificationManager;
     this.dialog = null;
+    this.boundHandlers = {
+      close: null,
+      cancel: null,
+      submit: null,
+      overlayClick: null,
+      fileAreaClick: null,
+      fileChange: null,
+      removeFile: null
+    };
     this.ensureStyles();
   }
 
   show(preselectedTugas = null) {
+    // ✅ PENTING: Hapus dialog lama jika ada
+    this.close();
+    
     this.createDialog(preselectedTugas);
     this.attachEventListeners();
   }
@@ -177,23 +206,22 @@ class UploadDialog {
     const selectedFileDiv = this.dialog.querySelector("#selectedFile");
     const removeFileBtn = this.dialog.querySelector(".remove-file");
     
-    closeBtn?.addEventListener("click", () => this.close());
-    cancelBtn?.addEventListener("click", () => this.close());
-    dialogOverlay?.addEventListener("click", () => this.close());
+    // ✅ Store handlers untuk cleanup nanti
+    this.boundHandlers.close = () => this.close();
+    this.boundHandlers.cancel = () => this.close();
+    this.boundHandlers.overlayClick = () => this.close();
+    this.boundHandlers.fileAreaClick = () => fileInput?.click();
+    this.boundHandlers.fileChange = (e) => this.handleFileSelect(e.target.files[0], fileUploadArea, selectedFileDiv);
+    this.boundHandlers.removeFile = () => this.removeFile(fileInput, fileUploadArea, selectedFileDiv);
+    this.boundHandlers.submit = () => this.handleSubmit(submitBtn, fileInput);
     
-    fileUploadArea?.addEventListener("click", () => fileInput?.click());
-    
-    fileInput?.addEventListener("change", (e) => {
-      this.handleFileSelect(e.target.files[0], fileUploadArea, selectedFileDiv);
-    });
-    
-    removeFileBtn?.addEventListener("click", () => {
-      this.removeFile(fileInput, fileUploadArea, selectedFileDiv);
-    });
-    
-    submitBtn?.addEventListener("click", () => {
-      this.handleSubmit(submitBtn, fileInput);
-    });
+    closeBtn?.addEventListener("click", this.boundHandlers.close);
+    cancelBtn?.addEventListener("click", this.boundHandlers.cancel);
+    dialogOverlay?.addEventListener("click", this.boundHandlers.overlayClick);
+    fileUploadArea?.addEventListener("click", this.boundHandlers.fileAreaClick);
+    fileInput?.addEventListener("change", this.boundHandlers.fileChange);
+    removeFileBtn?.addEventListener("click", this.boundHandlers.removeFile);
+    submitBtn?.addEventListener("click", this.boundHandlers.submit);
   }
 
   handleFileSelect(file, uploadArea, selectedDiv) {
@@ -235,8 +263,27 @@ class UploadDialog {
   }
 
   close() {
-    this.dialog?.remove();
-    this.dialog = null;
+    // ✅ Remove ALL event listeners sebelum hapus dialog
+    if (this.dialog) {
+      const closeBtn = this.dialog.querySelector(".dialog-close");
+      const cancelBtn = this.dialog.querySelector(".btn-cancel");
+      const submitBtn = this.dialog.querySelector(".btn-submit");
+      const dialogOverlay = this.dialog.querySelector(".dialog-overlay");
+      const fileUploadArea = this.dialog.querySelector("#fileUploadArea");
+      const fileInput = this.dialog.querySelector("#fileInput");
+      const removeFileBtn = this.dialog.querySelector(".remove-file");
+      
+      closeBtn?.removeEventListener("click", this.boundHandlers.close);
+      cancelBtn?.removeEventListener("click", this.boundHandlers.cancel);
+      dialogOverlay?.removeEventListener("click", this.boundHandlers.overlayClick);
+      fileUploadArea?.removeEventListener("click", this.boundHandlers.fileAreaClick);
+      fileInput?.removeEventListener("change", this.boundHandlers.fileChange);
+      removeFileBtn?.removeEventListener("click", this.boundHandlers.removeFile);
+      submitBtn?.removeEventListener("click", this.boundHandlers.submit);
+      
+      this.dialog.remove();
+      this.dialog = null;
+    }
   }
 
   ensureStyles() {
@@ -452,6 +499,10 @@ class UploadDialog {
     `;
     document.head.appendChild(style);
   }
+
+  destroy() {
+    this.close();
+  }
 }
 
 // ========== BUTTON ACTION HANDLER ==========
@@ -459,23 +510,23 @@ class ButtonActionHandler {
   constructor(notificationManager, uploadDialog) {
     this.notificationManager = notificationManager;
     this.uploadDialog = uploadDialog;
+    this.boundHandler = (e) => this.handleClick(e);
     this.initListeners();
   }
 
   initListeners() {
-    document.addEventListener("click", (e) => {
-      if (e.target.closest(".btn-action.primary")) {
-        this.handleSubmitAssignment(e);
-      }
-      
-      if (e.target.closest(".btn-action.secondary")) {
-        this.handleViewDetail(e);
-      }
-      
-      if (e.target.closest(".btn-action.tertiary")) {
-        this.handleTertiaryAction(e);
-      }
-    });
+    // ✅ Gunakan SINGLE delegated listener
+    document.addEventListener("click", this.boundHandler);
+  }
+
+  handleClick(e) {
+    if (e.target.closest(".btn-action.primary")) {
+      this.handleSubmitAssignment(e);
+    } else if (e.target.closest(".btn-action.secondary")) {
+      this.handleViewDetail(e);
+    } else if (e.target.closest(".btn-action.tertiary")) {
+      this.handleTertiaryAction(e);
+    }
   }
 
   handleSubmitAssignment(e) {
@@ -508,20 +559,19 @@ class ButtonActionHandler {
       this.notificationManager.show("Fitur revisi sedang dikembangkan", "info");
     }
   }
+
+  destroy() {
+    // ✅ Remove listener saat destroy
+    document.removeEventListener("click", this.boundHandler);
+  }
 }
 
 // ========== TUGAS APP CLASS ==========
 class TugasApp {
   constructor() {
-    // Prevent multiple initialization
-    if (window.__tugasAppInitialized) {
-      console.warn("TugasApp already initialized");
-      return;
-    }
-
     this.notificationManager = NotificationManager.getInstance();
     this.sidebar = SidebarManager.getInstance();
-    this.chatbot = ChatbotManager.getInstance(); // Akses chatbot singleton
+    this.chatbot = ChatbotManager.getInstance();
     this.uploadDialog = new UploadDialog(this.notificationManager);
     
     const filterCallback = () => this.tugasFilterManager.filter();
@@ -531,20 +581,45 @@ class TugasApp {
     this.tugasFilterManager = new TugasFilterManager(this.searchManager, this.filterTabManager);
     this.buttonActionHandler = new ButtonActionHandler(this.notificationManager, this.uploadDialog);
     
+    this.uploadBtnHandler = () => this.uploadDialog.show();
     this.setupUploadButton();
     this.init();
-    window.__tugasAppInitialized = true;
   }
 
   setupUploadButton() {
     const uploadBtn = document.getElementById('uploadTugasBtn');
-    uploadBtn?.addEventListener("click", () => {
-      this.uploadDialog.show();
-    });
+    if (uploadBtn) {
+      // ✅ Remove old listener dulu (jika ada)
+      uploadBtn.removeEventListener("click", this.uploadBtnHandler);
+      uploadBtn.addEventListener("click", this.uploadBtnHandler);
+    }
   }
 
   init() {
     console.log("✅ Tugas Page Loaded Successfully");
+  }
+
+  // ✅ PENTING: Tambahkan destroy method
+  destroy() {
+    console.log("🧹 Cleaning up Tugas Page...");
+    
+    // Cleanup upload button
+    const uploadBtn = document.getElementById('uploadTugasBtn');
+    if (uploadBtn) {
+      uploadBtn.removeEventListener("click", this.uploadBtnHandler);
+    }
+    
+    // Cleanup all managers
+    this.filterTabManager?.destroy();
+    this.tugasFilterManager?.destroy();
+    this.buttonActionHandler?.destroy();
+    this.uploadDialog?.destroy();
+    
+    // Clear reference
+    this.filterTabManager = null;
+    this.tugasFilterManager = null;
+    this.buttonActionHandler = null;
+    this.uploadDialog = null;
   }
 }
 
@@ -552,10 +627,19 @@ class TugasApp {
 let tugasAppInstance = null;
 
 function initTugasApp() {
-  if (!tugasAppInstance && document.querySelector('.tugas-item')) {
+  // ✅ Cleanup instance lama
+  if (tugasAppInstance) {
+    tugasAppInstance.destroy();
+    tugasAppInstance = null;
+  }
+  
+  // ✅ Hanya init jika element ada
+  if (document.querySelector('.tugas-item')) {
     tugasAppInstance = new TugasApp();
     window.tugasApp = tugasAppInstance;
+    console.log("✅ TugasApp initialized");
   }
+  
   return tugasAppInstance;
 }
 

@@ -1,5 +1,5 @@
 // ============================================
-// JADWAL.JS - Jadwal Page Module
+// JADWAL.JS - Jadwal Page Module (FIXED)
 // ============================================
 
 import { 
@@ -7,7 +7,7 @@ import {
   SidebarManager,
   SearchManager,
   NotificationManager,
-  ChatbotManager  // Import ChatbotManager
+  ChatbotManager
 } from './core.js';
 
 // ========== WEEK NAVIGATOR ==========
@@ -18,12 +18,15 @@ class WeekNavigator {
     this.currentWeekText = document.getElementById('currentWeek');
     this.currentWeekOffset = 0;
     
+    this.prevHandler = () => this.navigatePrev();
+    this.nextHandler = () => this.navigateNext();
+    
     this.initListeners();
   }
 
   initListeners() {
-    this.prevBtn?.addEventListener("click", () => this.navigatePrev());
-    this.nextBtn?.addEventListener("click", () => this.navigateNext());
+    this.prevBtn?.addEventListener("click", this.prevHandler);
+    this.nextBtn?.addEventListener("click", this.nextHandler);
   }
 
   navigatePrev() {
@@ -98,6 +101,11 @@ class WeekNavigator {
   init() {
     this.updateWeekDisplay();
   }
+
+  destroy() {
+    this.prevBtn?.removeEventListener("click", this.prevHandler);
+    this.nextBtn?.removeEventListener("click", this.nextHandler);
+  }
 }
 
 // ========== VIEW SWITCHER ==========
@@ -105,12 +113,15 @@ class ViewSwitcher {
   constructor(notificationManager) {
     this.notificationManager = notificationManager;
     this.viewBtns = document.querySelectorAll('.view-btn');
+    this.boundHandlers = new Map();
     this.initListeners();
   }
 
   initListeners() {
     this.viewBtns.forEach(btn => {
-      btn.addEventListener("click", () => this.handleViewChange(btn));
+      const handler = () => this.handleViewChange(btn);
+      this.boundHandlers.set(btn, handler);
+      btn.addEventListener("click", handler);
     });
   }
 
@@ -126,6 +137,16 @@ class ViewSwitcher {
       this.notificationManager.show("Tampilan bulanan sedang dalam pengembangan", "info");
     }
   }
+
+  destroy() {
+    this.viewBtns.forEach(btn => {
+      const handler = this.boundHandlers.get(btn);
+      if (handler) {
+        btn.removeEventListener("click", handler);
+      }
+    });
+    this.boundHandlers.clear();
+  }
 }
 
 // ========== EXPORT DIALOG MANAGER ==========
@@ -133,10 +154,19 @@ class ExportDialogManager {
   constructor(notificationManager) {
     this.notificationManager = notificationManager;
     this.dialog = null;
+    this.boundHandlers = {
+      close: null,
+      cancel: null,
+      overlayClick: null,
+      exportHandlers: []
+    };
     this.ensureStyles();
   }
 
   show() {
+    // ✅ PENTING: Hapus dialog lama jika ada
+    this.close();
+    
     this.dialog = document.createElement("div");
     this.dialog.className = "export-dialog";
     this.dialog.innerHTML = `
@@ -181,11 +211,17 @@ class ExportDialogManager {
     const dialogOverlay = this.dialog.querySelector(".dialog-overlay");
     const exportOptions = this.dialog.querySelectorAll(".export-option");
     
-    closeBtn?.addEventListener("click", () => this.close());
-    dialogOverlay?.addEventListener("click", () => this.close());
+    // ✅ Store handlers
+    this.boundHandlers.close = () => this.close();
+    this.boundHandlers.overlayClick = () => this.close();
+    
+    closeBtn?.addEventListener("click", this.boundHandlers.close);
+    dialogOverlay?.addEventListener("click", this.boundHandlers.overlayClick);
     
     exportOptions.forEach(option => {
-      option.addEventListener("click", () => this.handleExport(option));
+      const handler = () => this.handleExport(option);
+      this.boundHandlers.exportHandlers.push({ element: option, handler });
+      option.addEventListener("click", handler);
     });
   }
 
@@ -200,8 +236,22 @@ class ExportDialogManager {
   }
 
   close() {
-    this.dialog?.remove();
-    this.dialog = null;
+    // ✅ Remove ALL event listeners
+    if (this.dialog) {
+      const closeBtn = this.dialog.querySelector(".dialog-close");
+      const dialogOverlay = this.dialog.querySelector(".dialog-overlay");
+      
+      closeBtn?.removeEventListener("click", this.boundHandlers.close);
+      dialogOverlay?.removeEventListener("click", this.boundHandlers.overlayClick);
+      
+      this.boundHandlers.exportHandlers.forEach(({ element, handler }) => {
+        element?.removeEventListener("click", handler);
+      });
+      
+      this.dialog.remove();
+      this.dialog = null;
+      this.boundHandlers.exportHandlers = [];
+    }
   }
 
   ensureStyles() {
@@ -320,27 +370,35 @@ class ExportDialogManager {
     `;
     document.head.appendChild(style);
   }
+
+  destroy() {
+    this.close();
+  }
 }
 
 // ========== CLASS DETAIL HANDLER ==========
 class ClassDetailHandler {
   constructor(notificationManager) {
     this.notificationManager = notificationManager;
+    this.boundHandler = (e) => this.handleClick(e);
     this.initListeners();
   }
 
   initListeners() {
-    document.addEventListener("click", (e) => {
-      const classItem = e.target.closest(".class-item");
-      if (classItem) {
-        this.showClassDetail(classItem);
-      }
+    // ✅ SINGLE delegated listener
+    document.addEventListener("click", this.boundHandler);
+  }
 
-      const joinBtn = e.target.closest(".btn-join");
-      if (joinBtn) {
-        this.handleJoin(joinBtn);
-      }
-    });
+  handleClick(e) {
+    const classItem = e.target.closest(".class-item");
+    if (classItem) {
+      this.showClassDetail(classItem);
+    }
+
+    const joinBtn = e.target.closest(".btn-join");
+    if (joinBtn) {
+      this.handleJoin(joinBtn);
+    }
   }
 
   showClassDetail(classItem) {
@@ -398,6 +456,10 @@ Klik OK untuk join kelas atau Cancel untuk kembali.
       NotificationManager.getInstance().show(`Joining kelas: ${className}`, "success");
     }
   }
+
+  destroy() {
+    document.removeEventListener("click", this.boundHandler);
+  }
 }
 
 // ========== JADWAL FILTER ==========
@@ -436,6 +498,10 @@ class JadwalFilter {
       }
     });
   }
+
+  destroy() {
+    // No cleanup needed
+  }
 }
 
 // ========== JADWAL ACTION HANDLER ==========
@@ -443,6 +509,12 @@ class JadwalActionHandler {
   constructor(notificationManager, exportDialog) {
     this.notificationManager = notificationManager;
     this.exportDialog = exportDialog;
+    
+    this.exportHandler = () => this.exportDialog.show();
+    this.addScheduleHandler = () => {
+      this.notificationManager.show("Fitur tambah jadwal akan segera hadir! 🎉", "info");
+    };
+    
     this.initListeners();
   }
 
@@ -450,25 +522,32 @@ class JadwalActionHandler {
     const exportBtn = document.getElementById('exportBtn');
     const addScheduleBtn = document.getElementById('addScheduleBtn');
     
-    exportBtn?.addEventListener("click", () => this.exportDialog.show());
-    addScheduleBtn?.addEventListener("click", () => {
-      this.notificationManager.show("Fitur tambah jadwal akan segera hadir! 🎉", "info");
-    });
+    if (exportBtn) {
+      exportBtn.removeEventListener("click", this.exportHandler);
+      exportBtn.addEventListener("click", this.exportHandler);
+    }
+    
+    if (addScheduleBtn) {
+      addScheduleBtn.removeEventListener("click", this.addScheduleHandler);
+      addScheduleBtn.addEventListener("click", this.addScheduleHandler);
+    }
+  }
+
+  destroy() {
+    const exportBtn = document.getElementById('exportBtn');
+    const addScheduleBtn = document.getElementById('addScheduleBtn');
+    
+    exportBtn?.removeEventListener("click", this.exportHandler);
+    addScheduleBtn?.removeEventListener("click", this.addScheduleHandler);
   }
 }
 
 // ========== JADWAL APP CLASS ==========
 class JadwalApp {
   constructor() {
-    // Prevent multiple initialization
-    if (window.__jadwalAppInitialized) {
-      console.warn("JadwalApp already initialized");
-      return;
-    }
-
     this.notificationManager = NotificationManager.getInstance();
     this.sidebar = SidebarManager.getInstance();
-    this.chatbot = ChatbotManager.getInstance(); // Akses chatbot singleton
+    this.chatbot = ChatbotManager.getInstance();
     this.exportDialog = new ExportDialogManager(this.notificationManager);
     
     this.jadwalFilter = new JadwalFilter();
@@ -484,12 +563,28 @@ class JadwalApp {
     this.actionHandler = new JadwalActionHandler(this.notificationManager, this.exportDialog);
     
     this.init();
-    window.__jadwalAppInitialized = true;
   }
 
   init() {
     this.weekNavigator.init();
     console.log("✅ Jadwal Page Loaded Successfully");
+  }
+
+  // ✅ PENTING: Tambahkan destroy method
+  destroy() {
+    console.log("🧹 Cleaning up Jadwal Page...");
+    
+    this.weekNavigator?.destroy();
+    this.viewSwitcher?.destroy();
+    this.classDetailHandler?.destroy();
+    this.actionHandler?.destroy();
+    this.exportDialog?.destroy();
+    
+    this.weekNavigator = null;
+    this.viewSwitcher = null;
+    this.classDetailHandler = null;
+    this.actionHandler = null;
+    this.exportDialog = null;
   }
 }
 
@@ -497,10 +592,19 @@ class JadwalApp {
 let jadwalAppInstance = null;
 
 function initJadwalApp() {
-  if (!jadwalAppInstance && document.querySelector('.class-item, .upcoming-card')) {
+  // ✅ Cleanup instance lama
+  if (jadwalAppInstance) {
+    jadwalAppInstance.destroy();
+    jadwalAppInstance = null;
+  }
+  
+  // ✅ Hanya init jika element ada
+  if (document.querySelector('.class-item, .upcoming-card')) {
     jadwalAppInstance = new JadwalApp();
     window.jadwalApp = jadwalAppInstance;
+    console.log("✅ JadwalApp initialized");
   }
+  
   return jadwalAppInstance;
 }
 
