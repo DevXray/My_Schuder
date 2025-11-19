@@ -2,23 +2,47 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ChatbotController;
+use App\Http\Controllers\MahasiswaController;
+use App\Http\Controllers\DosenController;
+use App\Http\Controllers\MateriController;
+use App\Http\Controllers\JadwalController;
+use App\Http\Controllers\TugasController;
+use App\Http\Controllers\PengumpulanController;
+use App\Http\Controllers\ReminderController;
 
+/*
+|--------------------------------------------------------------------------
+| Web Routes
+|--------------------------------------------------------------------------
+*/
+
+// Halaman utama - redirect ke jadwal
 Route::get('/', function () {
-    return view('welcome');
+    return redirect()->route('jadwal.index');
 });
 
-Route::get('/materi', function () {
-    return view('materi');
-});
+// Resource routes untuk Mahasiswa & Dosen
+Route::resource('mahasiswa', MahasiswaController::class);
+Route::resource('dosen', DosenController::class);
 
-Route::get('/tugas', function () {
-    return view('tugas');
-});
+// Routes untuk Jadwal
+Route::get('/jadwal/search', [JadwalController::class, 'search'])->name('jadwal.search');
+Route::resource('jadwal', JadwalController::class);
 
-Route::get('/jadwal', function () {
-    return view('jadwal');
-});
+// Routes untuk Materi
+Route::resource('materi', MateriController::class);
 
-// API Routes
-Route::post('/api/chat', [ChatbotController::class, 'sendMessage']);
-Route::get('/api/chat/test', [ChatbotController::class, 'testGeminiAPI']);
+// Routes untuk Tugas & Pengumpulan
+Route::resource('tugas', TugasController::class);
+Route::resource('pengumpulan', PengumpulanController::class);
+Route::post('tugas/{id}/submit', [TugasController::class, 'submit'])->name('tugas.submit');
+Route::post('tugas/{id}/grade', [TugasController::class, 'grade'])->name('tugas.grade');
+
+// Routes untuk Reminder
+Route::resource('reminder', ReminderController::class);
+
+// API routes untuk Chatbot
+Route::prefix('api')->group(function () {
+    Route::post('/chat', [ChatbotController::class, 'sendMessage'])->name('api.chat.send');
+    Route::get('/chat/test', [ChatbotController::class, 'testGeminiAPI'])->name('api.chat.test');
+});

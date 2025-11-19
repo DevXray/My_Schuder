@@ -22,7 +22,7 @@
                     <i class="fas fa-bars"></i>
                 </button>
                 <div class="logo">
-                        <img class= "logo-icon" src="{{ Vite::asset('resources/assets/logo_akademik_hd.png') }}" alt="Logo My Schuder" />
+                       <img class="logo-icon" src="{{ asset('assets/logo_akademik_hd.png') }}" alt="Logo My Schuder" />
                     <div class="logo-text">
                         <h1>My Schuder</h1>
                         <p>Portal Pembelajaran</p>
