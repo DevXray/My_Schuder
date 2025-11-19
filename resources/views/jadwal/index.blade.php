@@ -44,8 +44,8 @@
                 <div class="user-profile" id="userProfile">
                     <div class="user-avatar">A</div>
                     <div class="user-info">
-                        <p class="user-name">Ahmad Student</p>
-                        <p class="user-role">Siswa</p>
+                        <p class="user-name"></p>
+                        <p class="user-role"></p>
                     </div>
                     <i class="fas fa-chevron-down"></i>
                 </div>
@@ -65,16 +65,7 @@
                     <h1><i class="fas fa-calendar-alt"></i> Jadwal Kelas</h1>
                     <p>Kelola dan pantau jadwal pembelajaran Anda</p>
                 </div>
-                <div class="header-actions">
-                    <button class="btn-secondary" id="exportBtn">
-                        <i class="fas fa-download"></i>
-                        Export Jadwal
-                    </button>
-                    <a href="{{ route('jadwal.create') }}" class="btn-primary">
-                        <i class="fas fa-plus"></i>
-                        Tambah Jadwal
-                    </a>
-                </div>
+               
             </div>
         </section>
 

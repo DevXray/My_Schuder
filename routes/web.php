@@ -9,6 +9,8 @@ use App\Http\Controllers\JadwalController;
 use App\Http\Controllers\TugasController;
 use App\Http\Controllers\PengumpulanController;
 use App\Http\Controllers\ReminderController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\DashboardController;
 
 /*
 |--------------------------------------------------------------------------
@@ -16,33 +18,72 @@ use App\Http\Controllers\ReminderController;
 |--------------------------------------------------------------------------
 */
 
-// Halaman utama - redirect ke jadwal
+// Public Routes
 Route::get('/', function () {
-    return redirect()->route('jadwal.index');
+    return redirect()->route('dashboard');
 });
 
-// Resource routes untuk Mahasiswa & Dosen
-Route::resource('mahasiswa', MahasiswaController::class);
-Route::resource('dosen', DosenController::class);
+// Auth Routes (Login, Register, Password Reset, etc.)
+require __DIR__.'/auth.php';
 
-// Routes untuk Jadwal
-Route::get('/jadwal/search', [JadwalController::class, 'search'])->name('jadwal.search');
-Route::resource('jadwal', JadwalController::class);
+// Protected Routes (Require Authentication)
+Route::middleware(['auth', 'verified'])->group(function () {
+    
+    // Dashboard
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-// Routes untuk Materi
-Route::resource('materi', MateriController::class);
-
-// Routes untuk Tugas & Pengumpulan
-Route::resource('tugas', TugasController::class);
-Route::resource('pengumpulan', PengumpulanController::class);
-Route::post('tugas/{id}/submit', [TugasController::class, 'submit'])->name('tugas.submit');
-Route::post('tugas/{id}/grade', [TugasController::class, 'grade'])->name('tugas.grade');
-
-// Routes untuk Reminder
-Route::resource('reminder', ReminderController::class);
-
-// API routes untuk Chatbot
-Route::prefix('api')->group(function () {
-    Route::post('/chat', [ChatbotController::class, 'sendMessage'])->name('api.chat.send');
-    Route::get('/chat/test', [ChatbotController::class, 'testGeminiAPI'])->name('api.chat.test');
+    // Profile Management
+    Route::prefix('profile')->name('profile.')->group(function () {
+        Route::get('/', [ProfileController::class, 'edit'])->name('edit');
+        Route::patch('/', [ProfileController::class, 'update'])->name('update');
+        Route::delete('/', [ProfileController::class, 'destroy'])->name('destroy');
+    });
+    
+    // Mahasiswa & Dosen Management
+    Route::resource('mahasiswa', MahasiswaController::class);
+    Route::resource('dosen', DosenController::class);
+    
+    // Jadwal (Schedule) Management
+    Route::controller(JadwalController::class)->prefix('jadwal')->name('jadwal.')->group(function () {
+        Route::get('/search', 'search')->name('search');
+    });
+    Route::resource('jadwal', JadwalController::class);
+    
+    // Materi (Course Materials)
+    Route::resource('materi', MateriController::class);
+    
+    // Tugas (Assignments) & Pengumpulan (Submissions)
+    Route::controller(TugasController::class)->prefix('tugas')->name('tugas.')->group(function () {
+        // Submit & Grade
+        Route::post('/{id}/submit', 'submit')->name('submit');
+        Route::post('/{id}/grade', 'grade')->name('grade');
+        
+        // Download Files
+        Route::get('/{id}/download-soal', 'downloadSoal')->name('downloadSoal');
+        Route::get('/{id}/download-jawaban', 'downloadJawaban')->name('downloadJawaban');
+        
+        // Export & Filter
+        Route::get('/export', 'export')->name('export');
+        Route::get('/filter', 'filter')->name('filter');
+    });
+    Route::resource('tugas', TugasController::class);
+    Route::resource('pengumpulan', PengumpulanController::class);
+    
+    // Reminder Management
+    Route::resource('reminder', ReminderController::class);
+    
+    // Additional Pages (Temporary views)
+    Route::get('/peserta', function () {
+        return view('dashboard'); // TODO: Create peserta view
+    })->name('peserta.index');
+    
+    Route::get('/pengaturan', function () {
+        return view('dashboard'); // TODO: Create pengaturan view
+    })->name('pengaturan.index');
+    
+    // Chatbot API Routes
+    Route::prefix('api')->name('api.')->group(function () {
+        Route::post('/chat', [ChatbotController::class, 'sendMessage'])->name('chat.send');
+        Route::get('/chat/test', [ChatbotController::class, 'testGeminiAPI'])->name('chat.test');
+    });
 });

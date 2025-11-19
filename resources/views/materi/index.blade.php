@@ -66,10 +66,7 @@
                     <h1><i class="fas fa-book-open"></i> Materi Kelas</h1>
                     <p>Akses semua materi pembelajaran Anda di sini</p>
                 </div>
-                <a href="{{ route('materi.create') }}" class="btn-primary">
-                    <i class="fas fa-plus"></i>
-                    Tambah Materi
-                </a>
+              
             </div>
         </section>
 

@@ -7,62 +7,29 @@
     <title>Tugas - My Schuder</title>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    @vite(['resources/css/app.css', 'resources/css/tugas.css', 'resources/js/tugas.js'])
+    @vite(['resources/css/app.css', 'resources/css/tugas.css','resources/js/app.js'])
 </head>
 <body>
     <!-- Header -->
-    <header class="header">
-        <div class="header-content">
-            <div class="header-left">
-                <button class="menu-btn" id="menuBtn" aria-label="Toggle Menu">
-                    <i class="fas fa-bars"></i>
-                </button>
-                <div class="logo">
-                    <img class="logo-icon" src="{{ asset('assets/logo_akademik_hd.png') }}" alt="Logo My Schuder" />
-                    <div class="logo-text">
-                        <h1>My Schuder</h1>
-                        <p>Portal Pembelajaran</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="header-center">
-                <div class="search-box">
-                    <i class="fas fa-search"></i>
-                    <input type="text" id="searchInput" placeholder="Cari tugas..." value="{{ request('search') }}">
-                    <button class="search-clear" id="searchClear" style="{{ request('search') ? '' : 'display: none;' }}">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-            </div>
-
-            <div class="header-right">
-                <button class="notification-btn" id="notificationBtn" aria-label="Notifications">
-                    <i class="fas fa-bell"></i>
-                    <span class="badge">{{ $counts['pending'] ?? 0 }}</span>
-                </button>
-                <div class="user-profile" id="userProfile">
-                    <div class="user-avatar">{{ substr(auth()->user()->name ?? 'A', 0, 1) }}</div>
-                    <div class="user-info">
-                        <p class="user-name">{{ auth()->user()->name ?? 'Ahmad Student' }}</p>
-                        <p class="user-role">Siswa</p>
-                    </div>
-                    <i class="fas fa-chevron-down"></i>
-                </div>
-            </div>
-        </div>
-    </header>
+    @include('partials.header')
 
     <!-- Sidebar -->
     @include('partials.sidebar')
 
     <!-- Main Content -->
     <main class="main-content" id="mainContent">
-        <!-- Success Message -->
+        <!-- Success/Error Message -->
         @if(session('success'))
         <div class="alert alert-success">
             <i class="fas fa-check-circle"></i>
             {{ session('success') }}
+        </div>
+        @endif
+
+        @if(session('error'))
+        <div class="alert alert-error">
+            <i class="fas fa-exclamation-circle"></i>
+            {{ session('error') }}
         </div>
         @endif
 
@@ -86,7 +53,7 @@
                 <button class="filter-tab {{ request('status', 'all') == 'all' ? 'active' : '' }}" 
                         onclick="filterByStatus('all')">
                     <i class="fas fa-th"></i> Semua 
-                    <span class="tab-count">{{ $tugas->count() }}</span>
+                    <span class="tab-count">{{ $counts['all'] ?? 0 }}</span>
                 </button>
                 <button class="filter-tab {{ request('status') == 'pending' ? 'active' : '' }}" 
                         onclick="filterByStatus('pending')">
@@ -136,11 +103,11 @@
                 <div class="stat-icon"><i class="fas fa-chart-line"></i></div>
                 <div class="stat-info">
                     <h3>Nilai Rata-rata</h3>
-                    <p class="stat-value">{{ $stats['rata_rata_nilai'] ?? 0 }}</p>
+                    <p class="stat-value">{{ $stats['rata_rata'] ?? 0 }}</p>
                     <span class="stat-desc">
-                        @if(($stats['rata_rata_nilai'] ?? 0) >= 85)
+                        @if(($stats['rata_rata'] ?? 0) >= 85)
                             Sangat baik!
-                        @elseif(($stats['rata_rata_nilai'] ?? 0) >= 75)
+                        @elseif(($stats['rata_rata'] ?? 0) >= 75)
                             Baik!
                         @else
                             Perlu ditingkatkan
@@ -156,40 +123,35 @@
             <div class="tugas-item" data-status="{{ $item->status }}" data-priority="{{ $item->priority }}">
                 
                 <!-- Priority Badge for High Priority Pending Tasks -->
-                @if($item->priority == 'high' && $item->status == 'pending')
+                @if($item->is_deadline_dekat)
                 <div class="tugas-priority high">
                     <i class="fas fa-exclamation-circle"></i>
                     Deadline Dekat!
                 </div>
                 @endif
 
-                <!-- Grade Badge for Graded Tasks -->
-                @if($item->status == 'graded' && $item->nilai)
-                <div class="tugas-grade {{ $item->nilai >= 85 ? 'excellent' : 'good' }}">
-                    <i class="fas fa-{{ $item->nilai >= 85 ? 'trophy' : 'star' }}"></i>
-                    <span class="grade-value">{{ $item->nilai }}</span>
-                    <span class="grade-label">/ 100</span>
-                </div>
-                @endif
-
                 <!-- Header -->
                 <div class="tugas-header">
                     <div class="tugas-info">
-                        <h3>{{ $item->judul }}</h3>
+                        <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem;">
+                            <h3 style="margin: 0;">{{ $item->judul }}</h3>
+                            
+                            @if($item->status == 'graded' && $item->nilai)
+                            <div class="tugas-grade {{ $item->grade_category }}">
+                                <i class="fas fa-{{ $item->nilai >= 90 ? 'trophy' : 'star' }}"></i>
+                                <span class="grade-value">{{ $item->nilai }}</span>
+                                <span class="grade-label">/ 100</span>
+                            </div>
+                            @endif
+                        </div>
                         <p class="tugas-subject">
                             <i class="fas fa-book"></i> 
                             {{ $item->materi->nama_materi ?? 'Materi' }}
                         </p>
                     </div>
                     <div class="tugas-status {{ $item->status }}">
-                        <i class="fas fa-{{ 
-                            $item->status == 'pending' ? 'clock' : 
-                            ($item->status == 'submitted' ? 'check' : 'star') 
-                        }}"></i>
-                        {{ 
-                            $item->status == 'pending' ? 'Belum Dikumpulkan' : 
-                            ($item->status == 'submitted' ? 'Sudah Dikumpulkan' : 'Sudah Dinilai') 
-                        }}
+                        <i class="fas {{ $item->status_icon }}"></i>
+                        {{ $item->status_text }}
                     </div>
                 </div>
 
@@ -212,11 +174,9 @@
                                 <i class="fas fa-calendar-alt"></i>
                                 <span>Diberikan: {{ $item->tanggal_diberikan->format('d M Y') }}</span>
                             </div>
-                            <div class="meta-item {{ $item->deadline->diffInDays(now()) <= 3 ? 'deadline' : '' }}">
+                            <div class="meta-item {{ $item->is_deadline_dekat ? 'deadline' : '' }}">
                                 <i class="fas fa-clock"></i>
-                                <span>Deadline: {{ $item->deadline->format('d M Y') }} 
-                                    ({{ $item->deadline->diffForHumans() }})
-                                </span>
+                                <span>Deadline: {{ $item->deadline->format('d M Y') }} ({{ $item->sisa_hari }})</span>
                             </div>
                             <div class="meta-item">
                                 <i class="fas fa-weight-hanging"></i>
@@ -225,7 +185,7 @@
                         @elseif($item->status == 'submitted')
                             <div class="meta-item">
                                 <i class="fas fa-calendar-alt"></i>
-                                <span>Dikumpulkan: {{ $item->waktu_pengumpulan->format('d M Y, H:i') }}</span>
+                                <span>Dikumpulkan: {{ $item->waktu_pengumpulan ? $item->waktu_pengumpulan->format('d M Y, H:i') : '-' }}</span>
                             </div>
                             <div class="meta-item {{ $item->tepat_waktu ? 'success' : 'deadline' }}">
                                 <i class="fas fa-{{ $item->tepat_waktu ? 'check-circle' : 'exclamation-circle' }}"></i>
@@ -276,7 +236,7 @@
                             <i class="fas fa-eye"></i> Lihat Detail Nilai
                         </button>
                         @if($item->feedback)
-                        <button class="btn-action tertiary" onclick="downloadFeedback({{ $item->id }})">
+                        <button class="btn-action tertiary" onclick="alert('Download feedback feature coming soon!')">
                             <i class="fas fa-download"></i> Unduh Feedback
                         </button>
                         @endif
@@ -324,8 +284,14 @@
         </div>
     </div>
 
+    <!--chatbot-->
+    @include('partials.chatbot')
+
     <!-- Overlay -->
     <div class="overlay" id="overlay"></div>
+
+    <!-- Loading Screen -->
+    @include('partials.loadingscreen')
 
     <script>
         function filterByStatus(status) {
@@ -351,39 +317,16 @@
             document.getElementById('overlay').style.display = 'none';
         }
 
-        // Search functionality
-        document.getElementById('searchInput')?.addEventListener('input', function(e) {
-            const searchBtn = document.getElementById('searchClear');
-            if (e.target.value) {
-                searchBtn.style.display = 'block';
-            } else {
-                searchBtn.style.display = 'none';
-            }
-        });
-
-        document.getElementById('searchClear')?.addEventListener('click', function() {
-            document.getElementById('searchInput').value = '';
-            this.style.display = 'none';
-            const url = new URL(window.location.href);
-            url.searchParams.delete('search');
-            window.location.href = url.toString();
-        });
-
-        // Submit search on Enter
-        document.getElementById('searchInput')?.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                const url = new URL(window.location.href);
-                if (this.value) {
-                    url.searchParams.set('search', this.value);
-                } else {
-                    url.searchParams.delete('search');
-                }
-                window.location.href = url.toString();
-            }
-        });
-
         // Close modal on overlay click
         document.getElementById('overlay')?.addEventListener('click', closeSubmitModal);
+
+        // Auto hide alerts after 5 seconds
+        setTimeout(() => {
+            document.querySelectorAll('.alert').forEach(alert => {
+                alert.style.animation = 'slideUp 0.3s ease';
+                setTimeout(() => alert.remove(), 300);
+            });
+        }, 5000);
     </script>
 
     <style>
@@ -404,6 +347,12 @@
             border-left: 4px solid #28a745;
         }
 
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border-left: 4px solid #dc3545;
+        }
+
         @keyframes slideDown {
             from {
                 opacity: 0;
@@ -412,6 +361,17 @@
             to {
                 opacity: 1;
                 transform: translateY(0);
+            }
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 1;
+                transform: translateY(0);
+            }
+            to {
+                opacity: 0;
+                transform: translateY(-20px);
             }
         }
 

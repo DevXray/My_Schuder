@@ -19,8 +19,7 @@
         <a href="/tugas" class="nav-item" data-page="tugas">
             <i class="fas fa-file-alt"></i>
             <span>Tugas</span>
-            <span class="nav-badge orange">5</span>
-            <div class="nav-indicator"></div>
+            
         </a>
         <a href="/jadwal" class="nav-item" data-page="jadwal">
             <i class="fas fa-calendar"></i>

@@ -95,7 +95,7 @@ class TugasController extends Controller
     public function show($id)
     {
         $tugas = Tugas::with(['dosen', 'materi'])->findOrFail($id);
-        return view('tugas.show', compact('pengummpulan'));
+        return view('tugas.show', compact('pengumpulan'));
     }
 
     public function edit($id)
