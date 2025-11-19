@@ -30,10 +30,12 @@
                     <span class="badge">3</span>
                 </button>
                 <div class="user-profile" id="userProfile">
-                    <div class="user-avatar">A</div>
+                    <div class="user-avatar">
+                        {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
+                    </div>
                     <div class="user-info">
-                        <p class="user-name">Ahmad Student</p>
-                        <p class="user-role">Siswa</p>
+                        <p class="user-name">{{ Auth::user()->name }}</p>
+                        <p class="user-role">{{ Auth::user()->role ?? 'Siswa' }}</p>
                     </div>
                     <i class="fas fa-chevron-down"></i>
                 </div>
