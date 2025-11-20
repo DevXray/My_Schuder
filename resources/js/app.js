@@ -1,11 +1,11 @@
-// resources/js/app.js
+// resources/js/app.js - FIXED VERSION
 import './bootstrap';
 
-// Import core PERTAMA (penting!)
+// ✅ Import core PERTAMA
 import './core.js';
 
-// ✨ TAMBAHAN: Import Router
-import { initRouter } from './router.js';
+// ❌ HAPUS ROUTER - Ini penyebab masalah!
+// import { initRouter } from './router.js';
 
 // Import main app
 import { initApp } from './script.js';
@@ -19,13 +19,13 @@ document.addEventListener('DOMContentLoaded', () => {
   // Initialize main app
   initApp();
   
-  // ✨ TAMBAHAN: Initialize router untuk SPA navigation
-  const router = initRouter();
+  // ❌ HAPUS ROUTER INIT
+  // const router = initRouter();
   
-  // Initial page load - detect dan load module yang sesuai
-  const currentPath = window.location.pathname; // ✨ TAMBAHAN
+  // ✅ Detect page dan load module yang sesuai
+  const currentPath = window.location.pathname;
   
-  // ✨ PERUBAHAN: Cek berdasarkan URL juga, bukan hanya DOM element
+  // Load module berdasarkan path ATAU DOM element
   if (currentPath.includes('materi') || document.querySelector('.materi-card')) {
     import('./materi.js').then(module => {
       module.initMateriApp();
@@ -44,5 +44,5 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
   
-  console.log('✅ Application initialized with client-side routing'); // ✨ TAMBAHAN
+  console.log('✅ Application initialized WITHOUT SPA router');
 });

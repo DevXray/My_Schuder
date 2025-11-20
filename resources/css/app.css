@@ -2,9 +2,4 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Import all custom CSS */
-@import './dashboard.css';
-@import './pages.css';
-@import './jadwal.css';
-@import './materi.css';
-@import './tugas.css';
+
