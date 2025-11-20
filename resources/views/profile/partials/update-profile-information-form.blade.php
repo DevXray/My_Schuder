@@ -61,8 +61,4 @@
             @endif
         </div>
     </form>
-<<<<<<< HEAD
 </section>
-=======
-</section>
->>>>>>> yasrin/main

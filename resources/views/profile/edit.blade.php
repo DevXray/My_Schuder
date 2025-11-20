@@ -26,8 +26,4 @@
             </div>
         </div>
     </div>
-<<<<<<< HEAD
 </x-app-layout>
-=======
-</x-app-layout>
->>>>>>> yasrin/main

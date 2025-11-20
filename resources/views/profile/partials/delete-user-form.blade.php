@@ -52,8 +52,4 @@
             </div>
         </form>
     </x-modal>
-<<<<<<< HEAD
 </section>
-=======
-</section>
->>>>>>> yasrin/main
