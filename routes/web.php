@@ -48,6 +48,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('jadwal', JadwalController::class);
     
     // Materi (Course Materials)
+    Route::post('/materi/{id}/progress', [MateriController::class, 'updateProgress'])
+        ->name('materi.updateProgress');
+    
     Route::resource('materi', MateriController::class);
     
     // Tugas (Assignments) & Pengumpulan (Submissions)

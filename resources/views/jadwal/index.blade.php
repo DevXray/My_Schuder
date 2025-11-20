@@ -53,6 +53,9 @@
         </div>
     </header>
 
+    <!-- Header -->
+    @include('partials.header')
+
     <!-- Sidebar -->
     @include('partials.sidebar')
 
