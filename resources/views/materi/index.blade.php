@@ -10,7 +10,7 @@
     @vite(['resources/css/app.css', 'resources/css/materi.css', 'resources/js/materi.js'])
 </head>
 <body>
-    <!-- Header -->
+   <!-- header -->
     <header class="header">
         <div class="header-content">
             <div class="header-left">
@@ -54,9 +54,12 @@
         </div>
     </header>
 
+     <!-- Header -->
+    @include('partials.header')
+
     <!-- Sidebar -->
     @include('partials.sidebar')
-
+    
     <!-- Main Content -->
     <main class="main-content" id="mainContent">
         <!-- Page Header -->
@@ -66,7 +69,6 @@
                     <h1><i class="fas fa-book-open"></i> Materi Kelas</h1>
                     <p>Akses semua materi pembelajaran Anda di sini</p>
                 </div>
-              
             </div>
         </section>
 
@@ -157,7 +159,7 @@
                     </div>
                     <div class="card-body">
                         <h3>{{ $materi->judul }}</h3>
-                        <p>{{ $materi->deskripsi }}</p>
+                        <p>{{ Str::limit($materi->deskripsi, 100) }}</p>
                         <div class="card-meta">
                             <span><i class="fas fa-file-alt"></i> {{ $materi->jumlah_modul }} Modul</span>
                             <span><i class="fas fa-clock"></i> {{ $materi->durasi_jam }} Jam</span>
@@ -167,32 +169,43 @@
                                 <div class="progress-fill {{ $materi->warna }}" 
                                      style="width: {{ $materi->progress }}%"></div>
                             </div>
-                            <span class="progress-text">{{ $materi->progress_text }}</span>
+                            <span class="progress-text">{{ $materi->progress }}% Selesai</span>
                         </div>
                     </div>
                     <div class="card-footer">
-                        <button class="btn-secondary">
-                            <i class="fas {{ $materi->button_icon }}"></i> {{ $materi->button_text }}
-                        </button>
+                        {{-- Tombol Lanjutkan - Mengarah ke Show --}}
+                        <a href="{{ route('materi.show', $materi->id) }}" 
+                           class="btn-secondary">
+                            <i class="fas fa-play"></i> Lanjutkan
+                        </a>
+                        
+                        {{-- Action Buttons --}}
                         <div style="display: flex; gap: 5px;">
+                            {{-- Info/Detail Button --}}
                             <a href="{{ route('materi.show', $materi->id) }}" 
-                               class="btn-icon" title="Detail">
+                               class="btn-icon" 
+                               title="Lihat Detail Materi">
                                 <i class="fas fa-info-circle"></i>
                             </a>
+                            
+                            {{-- Edit Button --}}
                             <a href="{{ route('materi.edit', $materi->id) }}" 
-                               class="btn-icon" title="Edit">
+                               class="btn-icon" 
+                               title="Edit Materi">
                                 <i class="fas fa-edit"></i>
                             </a>
+                            
+                            {{-- Delete Button --}}
                             <form action="{{ route('materi.destroy', $materi->id) }}" 
                                   method="POST" 
-                                  style="display: inline;">
+                                  style="display: inline;"
+                                  onsubmit="return confirm('Yakin ingin menghapus materi {{ $materi->judul }}?')">
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit" 
                                         class="btn-icon" 
-                                        title="Hapus"
-                                        onclick="return confirm('Hapus materi ini?')"
-                                        style="background: none; border: none; cursor: pointer; padding: 8px;">
+                                        title="Hapus Materi"
+                                        style="background: none; border: none; cursor: pointer; padding: 8px; color: inherit;">
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </form>
@@ -200,11 +213,12 @@
                     </div>
                 </div>
             @empty
-                <div style="grid-column: 1/-1; text-align: center; padding: 40px;">
-                    <i class="fas fa-inbox" style="font-size: 48px; color: #ccc; margin-bottom: 16px;"></i>
-                    <p style="color: #666;">Belum ada materi tersedia</p>
-                    <a href="{{ route('materi.create') }}" class="btn-primary" style="margin-top: 16px; display: inline-block;">
-                        <i class="fas fa-plus"></i> Tambah Materi Pertama
+                <div style="grid-column: 1/-1; text-align: center; padding: 60px 40px;">
+                    <i class="fas fa-inbox" style="font-size: 64px; color: #e0e0e0; margin-bottom: 20px;"></i>
+                    <h3 style="color: #666; margin-bottom: 8px;">Belum Ada Materi</h3>
+                    <p style="color: #999; margin-bottom: 24px;">Mulai tambahkan materi pembelajaran pertama Anda</p>
+                    <a href="{{ route('materi.create') }}" class="btn-primary" style="display: inline-block; text-decoration: none;">
+                        <i class="fas fa-plus"></i> Tambah Materi Baru
                     </a>
                 </div>
             @endforelse
@@ -223,19 +237,76 @@
             document.getElementById('filterForm').submit();
         }
 
-        // Search functionality
+        // Search functionality with debounce
         const searchInput = document.getElementById('searchInput');
+        const searchClear = document.getElementById('searchClear');
+        
         if (searchInput) {
             let searchTimeout;
+            
+            // Show/hide clear button
             searchInput.addEventListener('input', function() {
+                if (this.value.length > 0) {
+                    searchClear.style.display = 'block';
+                } else {
+                    searchClear.style.display = 'none';
+                }
+                
+                // Debounced search
                 clearTimeout(searchTimeout);
                 searchTimeout = setTimeout(() => {
-                    const form = document.getElementById('filterForm');
-                    const searchParam = new URLSearchParams(new FormData(form));
-                    searchParam.set('search', this.value);
-                    window.location.href = '{{ route("materi.index") }}?' + searchParam.toString();
+                    performSearch();
                 }, 500);
             });
+            
+            // Clear search
+            if (searchClear) {
+                searchClear.addEventListener('click', function() {
+                    searchInput.value = '';
+                    this.style.display = 'none';
+                    performSearch();
+                });
+            }
+        }
+        
+        function performSearch() {
+            const form = document.getElementById('filterForm');
+            const formData = new FormData(form);
+            const searchValue = searchInput.value;
+            
+            // Build URL with all parameters
+            const params = new URLSearchParams();
+            
+            // Add form parameters
+            for (let [key, value] of formData.entries()) {
+                if (value && value !== 'all') {
+                    params.set(key, value);
+                }
+            }
+            
+            // Add search parameter
+            if (searchValue) {
+                params.set('search', searchValue);
+            }
+            
+            // Redirect with parameters
+            window.location.href = '{{ route("materi.index") }}?' + params.toString();
+        }
+
+        // Card hover effects
+        document.querySelectorAll('.materi-card').forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-5px)';
+            });
+            
+            card.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0)';
+            });
+        });
+
+        // Show initial search value clear button
+        if (searchInput && searchInput.value.length > 0) {
+            searchClear.style.display = 'block';
         }
     </script>
 </body>
