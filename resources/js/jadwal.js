@@ -68,10 +68,34 @@ class WeekNavigator {
       this.currentWeekText.textContent = weekText;
     }
 
-    this.updateDayHeaders(startOfWeek);
-  }
+this.updateDayHeaders(startOfWeek);
+}
 
-  updateDayHeaders(startOfWeek) {
+updateDayHeaders(startOfWeek) {
+    // ✅ Cek apakah tabel jadwal kosong
+    function checkEmptySchedule() {
+        const rows = document.querySelectorAll("table tbody tr");
+        if (rows.length === 0 || (rows.length === 1 && rows[0].children.length === 1)) {
+            showNotification("☕ Tidak ada jadwal untuk hari ini.", "warning");
+            showEmptyRow();
+        }
+    }
+
+    // ✅ Tambah baris kosong kalau tidak ada data
+    function showEmptyRow() {
+        const tbody = document.querySelector("table tbody");
+        if (tbody && tbody.children.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="3" style="text-align:center; padding:20px; color:#888;">
+                        ☕ Tidak ada jadwal untuk hari ini
+                    </td>
+                </tr>
+            `;
+        }
+    }
+
+    // Update day dates
     const dayHeaders = document.querySelectorAll(".day-column .day-header");
     dayHeaders.forEach((header, index) => {
       const currentDay = new Date(startOfWeek);
