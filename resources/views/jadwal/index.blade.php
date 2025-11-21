@@ -255,7 +255,14 @@
         </section>
     </main>
 
+    @include('partials.chatbot')
+
     <!-- Overlay -->
     <div class="overlay" id="overlay"></div>
+
+    <!--loading-->
+    @include('partials.loadingscreen')
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </body>
 </html>

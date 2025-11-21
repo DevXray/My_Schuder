@@ -225,6 +225,8 @@
         </section>
     </main>
 
+    @include('partials.chatbot')
+
     <!-- Overlay -->
     <div class="overlay" id="overlay"></div>
 

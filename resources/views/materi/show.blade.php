@@ -1,5 +1,3 @@
-{{-- resources/views/materi/show.blade.php --}}
-
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -9,7 +7,7 @@
     <title>{{ $materi->judul }} - My Schuder</title>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    @vite(['resources/css/dashboard.css', 'resources/css/pages.css', 'resources/js/app.js'])
+    @vite(['resources/css/dashboard.css', 'resources/js/app.js'])
     
     <style>
         /* Custom styles for PDF viewer page */
