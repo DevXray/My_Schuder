@@ -4,6 +4,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Matkul;
 use App\Models\Materi;
 use App\Models\Dosen;
 use Illuminate\Http\Request;
@@ -56,7 +57,7 @@ class MateriController extends Controller
         }
 
         $materis = $query->get();
-        $stats = Materi::getStats();
+        $stats = Matkul::getStats();
         $dosens = Dosen::all();
 
         return view('materi.index', compact('materis', 'stats', 'dosens'));

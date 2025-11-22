@@ -67,7 +67,7 @@ class MatkulController extends Controller
             'non_aktif' => Matkul::where('status', 'non-aktif')->count(),
         ];
 
-        return view('matkul.index', compact('matkuls', 'dosens', 'stats'));
+        return view('materi.index', compact('matkuls', 'dosens', 'stats'));
     }
 
     public function create()
