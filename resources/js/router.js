@@ -2,7 +2,7 @@
 // ROUTER.JS - Enhanced with Dynamic Routes + Materi Show Support
 // ============================================
 
-import { NotificationManager } from './core.js';
+import { NotificationManager, SidebarManager } from './core.js';
 
 // ========== PAGE LOADER ==========
 class PageLoader {
@@ -242,9 +242,13 @@ class Router {
     return null;
   }
 
-  interceptLinks() {
-    // Use event delegation
+  // Di Router class, method interceptLinks()
+interceptLinks() {
+    // ✅ Use event delegation with proper type checking
     document.addEventListener('click', (e) => {
+      // ✅ Ensure target is an Element
+      if (!(e.target instanceof Element)) return;
+      
       const link = e.target.closest('a[href^="/"]');
       
       if (!link) return;
@@ -486,7 +490,7 @@ class Router {
         // Update main content
         this.mainContent.innerHTML = pageData.mainContent;
         
-        // ✅ UPDATED: Re-assign mainContent jika struktur berubah
+        // ✅ Re-assign mainContent if structure changed
         const newMainContent = 
           document.getElementById('mainContent') || 
           document.querySelector('.pdf-viewer-container') ||
@@ -495,8 +499,6 @@ class Router {
         
         if (newMainContent && newMainContent !== this.mainContent) {
           console.log('🔄 MainContent structure changed, re-assigning...');
-          console.log('Old:', this.mainContent.className);
-          console.log('New:', newMainContent.className);
           this.mainContent = newMainContent;
         }
         
@@ -518,6 +520,17 @@ class Router {
         
         // Remove loading overlay
         this.hideLoadingState();
+        
+        // ✅ CRITICAL: Re-initialize Sidebar Manager after DOM update
+        try {
+          const sidebarManager = SidebarManager.getInstance();
+          if (sidebarManager && typeof sidebarManager.reinitialize === 'function') {
+            sidebarManager.reinitialize();
+            console.log('✅ Sidebar re-initialized');
+          }
+        } catch (error) {
+          console.error('❌ Failed to re-initialize sidebar:', error);
+        }
         
         // Fade in
         requestAnimationFrame(() => {

@@ -4,6 +4,12 @@ import './bootstrap';
 // ✅ Import core PERTAMA
 import './core.js';
 
+import '../css/dashboard.css';
+import '../css/pages.css';
+import '../css/jadwal.css';
+import '../css/materi.css';
+import '../css/tugas.css';
+
 // ✅ Import router
 import { initRouter } from './router.js';
 
