@@ -290,6 +290,72 @@
     color: var(--white);
 }
 
+/* Quick Stats */
+.quick-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.stat-item {
+    background: var(--white);
+    padding: 1.5rem;
+    border-radius: 16px;
+    box-shadow: var(--shadow-md);
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    transition: var(--transition);
+    border-left: 4px solid;
+}
+
+.stat-item.blue {
+    border-left-color: var(--primary-blue);
+}
+
+.stat-item.orange {
+    border-left-color: var(--primary-orange);
+}
+
+.stat-item.green {
+    border-left-color: var(--success);
+}
+
+.stat-item:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-xl);
+}
+
+.stat-item i {
+    font-size: 2.5rem;
+    color: var(--primary-blue);
+}
+
+.stat-item.orange i {
+    color: var(--primary-orange);
+}
+
+.stat-item.green i {
+    color: var(--success);
+}
+
+.stat-number {
+    display: block;
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1;
+    margin-bottom: 0.25rem;
+}
+
+.stat-label {
+    display: block;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+
 /* Schedule Table */
 .schedule-view {
     background: var(--white);

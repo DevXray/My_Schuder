@@ -28,7 +28,7 @@ class SPAController extends Controller
                 
             case 'materi':
                 return $this->getMateriData($request);
-
+                
             case 'tugas':
                 return $this->getTugasData($request);
                 
@@ -66,8 +66,6 @@ class SPAController extends Controller
             'stats' => Materi::getStats()
         ]);
     }
-
-    
 
     private function getTugasData(Request $request)
     {

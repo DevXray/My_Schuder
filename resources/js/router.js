@@ -1,5 +1,5 @@
 // ============================================
-// ROUTER.JS - Enhanced with Dynamic Routes
+// ROUTER.JS - Enhanced with Dynamic Routes + Materi Show Support
 // ============================================
 
 import { NotificationManager } from './core.js';
@@ -39,20 +39,36 @@ class PageLoader {
       const parser = new DOMParser();
       const doc = parser.parseFromString(html, 'text/html');
       
-      // Extract content sections
-      const mainContent = doc.querySelector('.main-content, .pdf-viewer-container')?.innerHTML;
+      // ✅ UPDATED: Extract content dengan multiple fallbacks
+      const mainContent = 
+        doc.querySelector('.main-content')?.innerHTML ||
+        doc.querySelector('.pdf-viewer-container')?.innerHTML ||
+        doc.querySelector('#mainContent')?.innerHTML ||
+        doc.querySelector('main')?.innerHTML;
+      
       const sidebarContent = doc.querySelector('.sidebar')?.innerHTML;
       const headerContent = doc.querySelector('.header')?.innerHTML;
       
       if (!mainContent) {
-        throw new Error('Main content not found');
+        console.error('Available selectors:', {
+          mainContent: !!doc.querySelector('.main-content'),
+          pdfViewer: !!doc.querySelector('.pdf-viewer-container'),
+          mainId: !!doc.querySelector('#mainContent'),
+          main: !!doc.querySelector('main')
+        });
+        throw new Error('Main content not found in response');
       }
 
       const pageData = {
         mainContent,
         sidebarContent,
         headerContent,
-        title: doc.querySelector('title')?.textContent || 'My Schuder'
+        title: doc.querySelector('title')?.textContent || 'My Schuder',
+        // ✅ Extract data attributes dari body untuk passing ke module
+        bodyAttributes: {
+          materiId: doc.body.getAttribute('data-materi-id'),
+          tugasId: doc.body.getAttribute('data-tugas-id'),
+        }
       };
       
       // Cache for 5 minutes
@@ -87,9 +103,10 @@ class PageLoader {
           break;
           
         case 'materi-show':
-          // ✅ Lazy load module khusus untuk materi show
+          // ✅ UPDATED: Pass materiId from params
           const { initMateriShowApp } = await import('./materi-show.js');
           this.currentController = initMateriShowApp(params.id);
+          console.log('✅ Materi Show loaded with ID:', params.id);
           break;
           
         case 'tugas':
@@ -126,14 +143,15 @@ class Router {
   }
 
   initRouter() {
-    this.mainContent = document.getElementById('mainContent');
+    // ✅ UPDATED: Flexible main content detection
+    this.mainContent = 
+      document.getElementById('mainContent') ||
+      document.querySelector('.pdf-viewer-container') ||
+      document.querySelector('.main-content') ||
+      document.querySelector('main');
+    
     this.sidebar = document.getElementById('sidebar');
     this.header = document.querySelector('.header');
-    
-    // ✅ Handle jika main content menggunakan class berbeda (untuk show pages)
-    if (!this.mainContent) {
-      this.mainContent = document.querySelector('.pdf-viewer-container, main');
-    }
     
     if (!this.mainContent) {
       console.error('Main content element not found');
@@ -271,6 +289,16 @@ class Router {
       
       // Load page content
       const pageData = await this.pageLoader.loadPage(path);
+      
+      // ✅ Update body data attributes
+      if (pageData.bodyAttributes) {
+        Object.entries(pageData.bodyAttributes).forEach(([key, value]) => {
+          if (value) {
+            const attrName = `data-${key.replace(/([A-Z])/g, '-$1').toLowerCase()}`;
+            document.body.setAttribute(attrName, value);
+          }
+        });
+      }
       
       // Update ALL content sections
       await this.updateAllContent(pageData);
@@ -458,10 +486,17 @@ class Router {
         // Update main content
         this.mainContent.innerHTML = pageData.mainContent;
         
-        // ✅ Re-assign mainContent jika struktur berubah (untuk show pages)
-        const newMainContent = document.getElementById('mainContent') || 
-                               document.querySelector('.pdf-viewer-container, main');
-        if (newMainContent) {
+        // ✅ UPDATED: Re-assign mainContent jika struktur berubah
+        const newMainContent = 
+          document.getElementById('mainContent') || 
+          document.querySelector('.pdf-viewer-container') ||
+          document.querySelector('.main-content') ||
+          document.querySelector('main');
+        
+        if (newMainContent && newMainContent !== this.mainContent) {
+          console.log('🔄 MainContent structure changed, re-assigning...');
+          console.log('Old:', this.mainContent.className);
+          console.log('New:', newMainContent.className);
           this.mainContent = newMainContent;
         }
         
@@ -515,6 +550,7 @@ class Router {
     
     if (activeLink) {
       activeLink.classList.add('active');
+      console.log('✅ Active nav updated:', activeLink.textContent.trim());
     }
   }
 

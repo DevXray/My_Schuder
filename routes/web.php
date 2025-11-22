@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ChatbotController;
+use App\Http\Controllers\SPAController;
 use App\Http\Controllers\MahasiswaController;
 use App\Http\Controllers\DosenController;
 use App\Http\Controllers\MateriController;
@@ -75,7 +76,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     
     // Additional Pages (Temporary views)
     Route::get('/peserta', function () {
-        return view('dashboard'); // TODO: Create peserta view
+        return view('peserta.index'); // TODO: Create peserta view
     })->name('peserta.index');
     
     Route::get('/pengaturan', function () {

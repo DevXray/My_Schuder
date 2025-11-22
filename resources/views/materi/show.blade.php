@@ -19,13 +19,13 @@
         .viewer-header {
             background: white;
             border-bottom: 1px solid #e5e7eb;
-            margin-top: 70px; /* Space for main header */
+            margin-top: 70px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
         
         .viewer-header-content {
-            max-width: calc(100% - 250px); /* Adjust for sidebar */
-            margin-left: 250px; /* Space for sidebar */
+            max-width: calc(100% - 250px);
+            margin-left: 250px;
             padding: 1rem 1.5rem;
             display: flex;
             align-items: center;
@@ -114,19 +114,10 @@
             background: #059669;
         }
         
-        .action-btn.edit {
-            background: #f59e0b;
-            color: white;
-        }
-        
-        .action-btn.edit:hover {
-            background: #d97706;
-        }
-        
         .viewer-main {
             max-width: 1400px;
             margin: 0 auto;
-            margin-left: 250px; /* Space for sidebar */
+            margin-left: 250px;
             padding: 1.5rem;
             display: grid;
             grid-template-columns: 1fr 350px;
@@ -284,12 +275,6 @@
             transition: width 0.3s;
         }
         
-        .progress-form {
-            display: flex;
-            flex-direction: column;
-            gap: 0.75rem;
-        }
-        
         .status-card {
             background: white;
             border-radius: 12px;
@@ -387,7 +372,8 @@
         }
     </style>
 </head>
-<body>
+{{-- ✅ UPDATED: Added data-materi-id for module detection --}}
+<body data-materi-id="{{ $materi->id }}" data-materi-path="/^\/materi\/(\d+)$/">
 
     <!-- Header -->
     @include('partials.header')
@@ -395,13 +381,14 @@
     <!-- Sidebar -->
     @include('partials.sidebar')
 
-    {{-- Main Content Area --}}
-    <div class="pdf-viewer-container">
+    {{-- ✅ UPDATED: Added id="mainContent" for SPA router --}}
+    <div class="pdf-viewer-container" id="mainContent">
         
         {{-- Sticky Header --}}
         <div class="viewer-header">
             <div class="viewer-header-content">
                 <div class="viewer-title-section">
+                    {{-- ✅ UPDATED: Back button with SPA-friendly href --}}
                     <a href="{{ route('materi.index') }}" class="back-button">
                         <i class="fas fa-arrow-left"></i>
                     </a>
@@ -597,10 +584,9 @@
 
     </div>
 
-    <script>
-        // Optional: Add any additional JavaScript here if needed
-        console.log('Materi viewer loaded');
-    </script>
+    {{-- ✅ Chatbot & Overlay tetap outside mainContent --}}
+    @include('partials.chatbot')
+    <div class="overlay" id="overlay"></div>
 
 </body>
 </html>
