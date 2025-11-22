@@ -11,12 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('pengumpulans')) {
         Schema::create('pengumpulans', function (Blueprint $table) {
             $table->id();
             $table->timestamps();
         });
     }
-
+}
     /**
      * Reverse the migrations.
      */

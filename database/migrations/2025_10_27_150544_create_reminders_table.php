@@ -11,12 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('reminders')) {
         Schema::create('reminders', function (Blueprint $table) {
             $table->id();
             $table->timestamps();
         });
     }
-
+}
     /**
      * Reverse the migrations.
      */

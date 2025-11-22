@@ -11,6 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+    if (!Schema::hasTable('pengumpulan_tugas')) {
        Schema::create('pengumpulan_tugas', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('tugas_id');
@@ -24,7 +25,7 @@ return new class extends Migration
         });
 
     }
-
+}
     /**
      * Reverse the migrations.
      */
