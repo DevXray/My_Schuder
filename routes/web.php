@@ -1,54 +1,90 @@
 <?php
 
+use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ChatbotController;
-use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\MahasiswaController;
+use App\Http\Controllers\DosenController;
+use App\Http\Controllers\MateriController;
+use App\Http\Controllers\JadwalController;
+use App\Http\Controllers\TugasController;
+use App\Http\Controllers\PengumpulanController;
+use App\Http\Controllers\ReminderController;
+use App\Http\Controllers\DashboardController;
 
-// Redirect root ke dashboard
+/*
+|--------------------------------------------------------------------------
+| Web Routes
+|--------------------------------------------------------------------------
+*/
+
+// Public Routes - Redirect root ke dashboard
 Route::redirect('/', '/dashboard');
 
-// Dashboard (Protected)
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+// Auth Routes (Login, Register, Password Reset, etc.)
+require __DIR__.'/auth.php';
 
-// Protected Routes (Butuh Login)
+// Protected Routes (Require Authentication)
 Route::middleware(['auth', 'verified'])->group(function () {
     
-    // Materi
-    Route::get('/materi', function () {
-        return view('materi');
-    })->name('materi.index');
+    // Dashboard
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    // Profile Management
+    Route::prefix('profile')->name('profile.')->group(function () {
+        Route::get('/', [ProfileController::class, 'edit'])->name('edit');
+        Route::patch('/', [ProfileController::class, 'update'])->name('update');
+        Route::delete('/', [ProfileController::class, 'destroy'])->name('destroy');
+    });
     
-    // Tugas
-    Route::get('/tugas', function () {
-        return view('tugas');
-    })->name('tugas.index');
+    // Mahasiswa & Dosen Management
+    Route::resource('mahasiswa', MahasiswaController::class);
+    Route::resource('dosen', DosenController::class);
     
-    // Jadwal
-    Route::get('/jadwal', function () {
-        return view('jadwal');
-    })->name('jadwal.index');
+    // Jadwal (Schedule) Management
+    Route::controller(JadwalController::class)->prefix('jadwal')->name('jadwal.')->group(function () {
+        Route::get('/search', 'search')->name('search');
+    });
+    Route::resource('jadwal', JadwalController::class);
     
-    // Peserta
+    // Materi (Course Materials)
+    Route::post('/materi/{id}/progress', [MateriController::class, 'updateProgress'])
+        ->name('materi.updateProgress');
+    
+    Route::resource('materi', MateriController::class);
+    
+    // Tugas (Assignments) & Pengumpulan (Submissions)
+    Route::controller(TugasController::class)->prefix('tugas')->name('tugas.')->group(function () {
+        // Submit & Grade
+        Route::post('/{id}/submit', 'submit')->name('submit');
+        Route::post('/{id}/grade', 'grade')->name('grade');
+        
+        // Download Files
+        Route::get('/{id}/download-soal', 'downloadSoal')->name('downloadSoal');
+        Route::get('/{id}/download-jawaban', 'downloadJawaban')->name('downloadJawaban');
+        
+        // Export & Filter
+        Route::get('/export', 'export')->name('export');
+        Route::get('/filter', 'filter')->name('filter');
+    });
+    Route::resource('tugas', TugasController::class);
+    Route::resource('pengumpulan', PengumpulanController::class);
+    
+    // Reminder Management
+    Route::resource('reminder', ReminderController::class);
+    
+    // Additional Pages (Temporary views)
     Route::get('/peserta', function () {
-        return view('dashboard'); // Temporary, return dashboard dulu
+        return view('dashboard'); // TODO: Create peserta view
     })->name('peserta.index');
     
-    // Pengaturan
     Route::get('/pengaturan', function () {
-        return view('dashboard'); // Temporary, return dashboard dulu
+        return view('dashboard'); // TODO: Create pengaturan view
     })->name('pengaturan.index');
     
-    // Profile Routes
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-    
     // Chatbot API Routes
-    Route::post('/api/chat', [ChatbotController::class, 'sendMessage'])->name('chat.send');
-    Route::get('/api/chat/test', [ChatbotController::class, 'testGeminiAPI'])->name('chat.test');
+    Route::prefix('api')->name('api.')->group(function () {
+        Route::post('/chat', [ChatbotController::class, 'sendMessage'])->name('chat.send');
+        Route::get('/chat/test', [ChatbotController::class, 'testGeminiAPI'])->name('chat.test');
+    });
 });
-
-// Auth Routes (Login, Register, Logout, dll)
-require __DIR__.'/auth.php';

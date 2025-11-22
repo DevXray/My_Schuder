@@ -8,8 +8,6 @@
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-
     @vite(['resources/css/dashboard.css', 'resources/js/app.js'])
 
 </head>
@@ -25,18 +23,15 @@
         <!-- Welcome Section -->
         <section class="welcome-section">
             <div class="welcome-content">
-                <h2>Selamat Datang </h2>
-                <p>Reminder tugas</p>
-            </div>
-            <div class="quick-actions">
-                <button class="action-btn primary">
-                    <i class="fas fa-plus"></i>
-                    <span>Tambah Materi</span>
-                </button>
-                <button class="action-btn secondary">
-                    <i class="fas fa-calendar-plus"></i>
-                    <span>Buat Jadwal</span>
-                </button>
+                <h2>Selamat Datang, {{ Auth::user()->name ?? 'Mahasiswa' }}</h2>
+                <p>
+                    @if($deadlineDekat > 0)
+                        <i class="fas fa-exclamation-circle"></i>
+                        Kamu punya {{ $deadlineDekat }} tugas dengan deadline dekat!
+                    @else
+                        Semua tugas dalam kendali. Tetap semangat belajar! 🎓
+                    @endif
+                </p>
             </div>
         </section>
 
@@ -48,9 +43,10 @@
                 </div>
                 <div class="stat-content">
                     <h3>Total Materi</h3>
-                    <p class="stat-number" data-target="24">0</p>
+                    <p class="stat-number" data-target="{{ $totalMateri }}">0</p>
                     <span class="stat-change positive">
-                        <i class="fas fa-arrow-up"></i> 3 materi baru minggu ini
+                        <i class="fas fa-check-circle"></i> 
+                        {{ $materiSelesai }} selesai
                     </span>
                 </div>
             </div>
@@ -61,9 +57,10 @@
                 </div>
                 <div class="stat-content">
                     <h3>Tugas Aktif</h3>
-                    <p class="stat-number" data-target="5">0</p>
-                    <span class="stat-change warning">
-                        <i class="fas fa-clock"></i> 2 deadline minggu ini
+                    <p class="stat-number" data-target="{{ $tugasAktif }}">0</p>
+                    <span class="stat-change {{ $deadlineDekat > 0 ? 'warning' : '' }}">
+                        <i class="fas fa-clock"></i> 
+                        {{ $deadlineDekat }} deadline dekat
                     </span>
                 </div>
             </div>
@@ -74,7 +71,7 @@
                 </div>
                 <div class="stat-content">
                     <h3>Peserta Kelas</h3>
-                    <p class="stat-number" data-target="32">0</p>
+                    <p class="stat-number" data-target="{{ $pesertaKelas }}">0</p>
                     <span class="stat-change positive">
                         <i class="fas fa-arrow-up"></i> 2 peserta baru
                     </span>
@@ -87,9 +84,14 @@
                 </div>
                 <div class="stat-content">
                     <h3>Jadwal Hari Ini</h3>
-                    <p class="stat-number" data-target="3">0</p>
+                    <p class="stat-number" data-target="{{ $jadwalHariIni }}">0</p>
                     <span class="stat-change">
-                        <i class="fas fa-clock"></i> Mulai 09:00 WIB
+                        <i class="fas fa-clock"></i> 
+                        @if($jadwalList->isNotEmpty())
+                            Mulai {{ \Carbon\Carbon::parse($jadwalList->first()->jam_mulai)->format('H:i') }} WIB
+                        @else
+                            Tidak ada kelas
+                        @endif
                     </span>
                 </div>
             </div>
@@ -104,67 +106,32 @@
                         <i class="fas fa-bell"></i>
                         Informasi Terbaru
                     </h3>
-                    <button class="view-all-btn">
+                    <a href="{{ route('tugas.index') }}" class="view-all-btn">
                         Lihat Semua
                         <i class="fas fa-arrow-right"></i>
-                    </button>
+                    </a>
                 </div>
                 <div class="card-body">
-                    <div class="update-item announcement">
-                        <div class="update-indicator"></div>
-                        <div class="update-icon">
-                            <i class="fas fa-bullhorn"></i>
+                    @forelse($informasiTerbaru as $info)
+                        <div class="update-item {{ $info['type'] }}">
+                            <div class="update-indicator"></div>
+                            <div class="update-icon">
+                                <i class="fas {{ $info['icon'] }}"></i>
+                            </div>
+                            <div class="update-content">
+                                <h4>{{ $info['title'] }}</h4>
+                                <p>{{ $info['description'] }}</p>
+                                <span class="update-time">
+                                    <i class="far fa-clock"></i> {{ $info['time'] }}
+                                </span>
+                            </div>
                         </div>
-                        <div class="update-content">
-                            <h4>Pengumuman: Ujian Tengah Semester</h4>
-                            <p>Ujian akan dilaksanakan minggu depan. Pastikan untuk mempersiapkan diri dengan baik.</p>
-                            <span class="update-time">
-                                <i class="far fa-clock"></i> 2 jam yang lalu
-                            </span>
+                    @empty
+                        <div class="empty-state">
+                            <i class="fas fa-inbox"></i>
+                            <p>Belum ada informasi terbaru</p>
                         </div>
-                    </div>
-
-                    <div class="update-item material">
-                        <div class="update-indicator"></div>
-                        <div class="update-icon">
-                            <i class="fas fa-book-open"></i>
-                        </div>
-                        <div class="update-content">
-                            <h4>Materi Baru: Algoritma & Struktur Data</h4>
-                            <p>Materi pembelajaran baru telah ditambahkan ke kelas.</p>
-                            <span class="update-time">
-                                <i class="far fa-clock"></i> 5 jam yang lalu
-                            </span>
-                        </div>
-                    </div>
-
-                    <div class="update-item assignment">
-                        <div class="update-indicator"></div>
-                        <div class="update-icon">
-                            <i class="fas fa-clipboard-check"></i>
-                        </div>
-                        <div class="update-content">
-                            <h4>Tugas: Project Akhir Semester</h4>
-                            <p>Deadline pengumpulan project adalah 15 Desember 2025.</p>
-                            <span class="update-time">
-                                <i class="far fa-clock"></i> 1 hari yang lalu
-                            </span>
-                        </div>
-                    </div>
-
-                    <div class="update-item discussion">
-                        <div class="update-indicator"></div>
-                        <div class="update-icon">
-                            <i class="fas fa-comments"></i>
-                        </div>
-                        <div class="update-content">
-                            <h4>Diskusi: Persiapan Presentasi Kelompok</h4>
-                            <p>Forum diskusi untuk koordinasi presentasi kelompok.</p>
-                            <span class="update-time">
-                                <i class="far fa-clock"></i> 2 hari yang lalu
-                            </span>
-                        </div>
-                    </div>
+                    @endforelse
                 </div>
             </section>
 
@@ -173,60 +140,35 @@
                 <div class="card-header">
                     <h3>
                         <i class="fas fa-calendar-day"></i>
-                        Jadwal Hari Ini
+                        Jadwal Hari Ini ({{ $hariIni }})
                     </h3>
-                    <button class="view-all-btn">
+                    <a href="{{ route('jadwal.index') }}" class="view-all-btn">
                         <i class="fas fa-calendar-week"></i>
-                    </button>
+                    </a>
                 </div>
                 <div class="card-body">
-                    <div class="schedule-item">
-                        <div class="schedule-time blue">
-                            <i class="far fa-clock"></i>
-                            <span>09:00</span>
+                    @forelse($jadwalList as $index => $jadwal)
+                        <div class="schedule-item">
+                            <div class="schedule-time {{ $index % 2 == 0 ? 'blue' : 'orange' }}">
+                                <i class="far fa-clock"></i>
+                                <span>{{ \Carbon\Carbon::parse($jadwal->jam_mulai)->format('H:i') }}</span>
+                            </div>
+                            <div class="schedule-content">
+                                <h4>{{ $jadwal->nama_matkul }}</h4>
+                                <p>{{ $jadwal->dosen }}</p>
+                                <span class="schedule-room">
+                                    <i class="fas fa-map-marker-alt"></i>
+                                    {{ $jadwal->ruangan }}
+                                </span>
+                            </div>
+                            <button class="schedule-join {{ $index % 2 == 0 ? 'blue' : 'orange' }}">Join</button>
                         </div>
-                        <div class="schedule-content">
-                            <h4>Matematika Lanjut</h4>
-                            <p>Kalkulus Integral</p>
-                            <span class="schedule-room">
-                                <i class="fas fa-map-marker-alt"></i>
-                                Ruang A101
-                            </span>
+                    @empty
+                        <div class="empty-state">
+                            <i class="fas fa-calendar-times"></i>
+                            <p>Tidak ada jadwal hari ini</p>
                         </div>
-                        <button class="schedule-join blue">Join</button>
-                    </div>
-
-                    <div class="schedule-item">
-                        <div class="schedule-time orange">
-                            <i class="far fa-clock"></i>
-                            <span>11:00</span>
-                        </div>
-                        <div class="schedule-content">
-                            <h4>Pemrograman Web</h4>
-                            <p>JavaScript ES6+</p>
-                            <span class="schedule-room">
-                                <i class="fas fa-map-marker-alt"></i>
-                                Lab Komputer 2
-                            </span>
-                        </div>
-                        <button class="schedule-join orange">Join</button>
-                    </div>
-
-                    <div class="schedule-item">
-                        <div class="schedule-time blue">
-                            <i class="far fa-clock"></i>
-                            <span>14:00</span>
-                        </div>
-                        <div class="schedule-content">
-                            <h4>Basis Data</h4>
-                            <p>Database Design</p>
-                            <span class="schedule-room">
-                                <i class="fas fa-map-marker-alt"></i>
-                                Ruang B202
-                            </span>
-                        </div>
-                        <button class="schedule-join blue">Join</button>
-                    </div>
+                    @endforelse
                 </div>
             </section>
         </div>
@@ -239,64 +181,33 @@
                     Progress Pembelajaran
                 </h3>
                 <div class="progress-filter">
-                    <button class="filter-btn active">Semua</button>
-                    <button class="filter-btn">Semester Ini</button>
-                    <button class="filter-btn">Bulan Ini</button>
+                    <a href="{{ route('materi.index') }}" class="filter-btn active">Semua Materi</a>
                 </div>
             </div>
             <div class="card-body">
                 <div class="progress-grid">
-                    <div class="progress-item">
-                        <div class="progress-header">
-                            <div>
-                                <span class="progress-title">Algoritma & Struktur Data</span>
-                                <span class="progress-subtitle">24 dari 32 materi selesai</span>
+                    @forelse($progressMateri as $index => $materi)
+                        <div class="progress-item">
+                            <div class="progress-header">
+                                <div>
+                                    <span class="progress-title">{{ $materi['title'] }}</span>
+                                    <span class="progress-subtitle">
+                                        {{ $materi['completed'] }} dari {{ $materi['total'] }} materi selesai
+                                    </span>
+                                </div>
+                                <span class="progress-percentage">{{ $materi['percentage'] }}%</span>
                             </div>
-                            <span class="progress-percentage">75%</span>
-                        </div>
-                        <div class="progress-bar">
-                            <div class="progress-fill blue" data-progress="75"></div>
-                        </div>
-                    </div>
-
-                    <div class="progress-item">
-                        <div class="progress-header">
-                            <div>
-                                <span class="progress-title">Pemrograman Web</span>
-                                <span class="progress-subtitle">27 dari 30 materi selesai</span>
+                            <div class="progress-bar">
+                                <div class="progress-fill {{ $index % 2 == 0 ? 'blue' : 'orange' }}" 
+                                     data-progress="{{ $materi['percentage'] }}"></div>
                             </div>
-                            <span class="progress-percentage">90%</span>
                         </div>
-                        <div class="progress-bar">
-                            <div class="progress-fill orange" data-progress="90"></div>
+                    @empty
+                        <div class="empty-state">
+                            <i class="fas fa-chart-bar"></i>
+                            <p>Belum ada data progress</p>
                         </div>
-                    </div>
-
-                    <div class="progress-item">
-                        <div class="progress-header">
-                            <div>
-                                <span class="progress-title">Basis Data</span>
-                                <span class="progress-subtitle">18 dari 30 materi selesai</span>
-                            </div>
-                            <span class="progress-percentage">60%</span>
-                        </div>
-                        <div class="progress-bar">
-                            <div class="progress-fill blue" data-progress="60"></div>
-                        </div>
-                    </div>
-
-                    <div class="progress-item">
-                        <div class="progress-header">
-                            <div>
-                                <span class="progress-title">Matematika Lanjut</span>
-                                <span class="progress-subtitle">17 dari 20 materi selesai</span>
-                            </div>
-                            <span class="progress-percentage">85%</span>
-                        </div>
-                        <div class="progress-bar">
-                            <div class="progress-fill orange" data-progress="85"></div>
-                        </div>
-                    </div>
+                    @endforelse
                 </div>
             </div>
         </section>

@@ -1583,6 +1583,10 @@ body.proxy-unavailable .chatbot-toggle .status-dot {
     }
 }
 
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
 @keyframes fadeIn {
     from { 
         opacity: 0;

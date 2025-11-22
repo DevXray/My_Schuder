@@ -305,7 +305,9 @@ export class LoadingScreenManager extends UIManager {
   }
 }
 
-// ========== NAVIGATION MANAGER ==========
+// resources/js/core.js - NAVIGATION MANAGER (FIXED UNTUK SPA)
+
+// ========== NAVIGATION MANAGER (Client-Side) ==========
 export class NavigationManager {
   constructor(selector = '.nav-item:not(.logout)') {
     this.navItems = document.querySelectorAll(selector);
@@ -313,30 +315,33 @@ export class NavigationManager {
   }
 
   initListeners() {
+    // ⚠️ PENTING: Jangan add listener di sini untuk SPA
+    // Router.js akan handle interception via event delegation
+    
+    // Hanya set initial active state
+    this.setInitialActiveState();
+  }
+
+  setInitialActiveState() {
+    const currentPath = window.location.pathname;
     this.navItems.forEach(item => {
-      item.addEventListener("click", (e) => this.handleNavClick(e, item));
+      const href = item.getAttribute('href');
+      if (href === currentPath) {
+        item.classList.add('active');
+      }
     });
   }
 
-  handleNavClick(e, item) {
-    const href = item.getAttribute('href');
-    const isAbsolute = href && href.startsWith('/');
-
-    this.navItems.forEach(nav => nav.classList.remove("active"));
-    item.classList.add("active");
-
-    if (window.innerWidth <= 768) {
-      const sidebar = SidebarManager.getInstance();
-      sidebar.close();
-    }
-
-    if (!isAbsolute) {
-      e.preventDefault();
-      const page = item.getAttribute('data-page');
-      if (page) {
-        console.log(`Navigate to: ${page}`);
+  // Method untuk update active state (dipanggil oleh router)
+  updateActive(path) {
+    this.navItems.forEach(item => {
+      const href = item.getAttribute('href');
+      if (href === path) {
+        item.classList.add('active');
+      } else {
+        item.classList.remove('active');
       }
-    }
+    });
   }
 }
 

@@ -34,7 +34,7 @@
             <div class="relative z-10 flex flex-col justify-center items-center text-white w-full">
                 <!-- Logo Section -->
                 <div class="text-center mb-12">
-                    <img src="{{ Vite::asset('resources/assets/logo_akademik_hd.png') }}" alt="Logo" class="w-24 h-24 mx-auto mb-4 drop-shadow-2xl">
+                   <img class="logo-icon" src="{{ asset('assets/logo_akademik_hd.png') }}" alt="Logo My Schuder" />
                     <h1 class="text-4xl font-bold mb-2">My Schuder</h1>
                     <p class="text-blue-100 text-lg">Portal Pembelajaran Modern</p>
                 </div>
