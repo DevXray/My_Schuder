@@ -1,8 +1,14 @@
-// resources/js/app.js - OPTIMAL VERSION (WITH SPA ROUTER)
+// resources/js/app.js - UPDATED VERSION (WITH MATERI SHOW DETECTION)
 import './bootstrap';
 
 // ✅ Import core PERTAMA
 import './core.js';
+
+import '../css/dashboard.css';
+import '../css/pages.css';
+import '../css/jadwal.css';
+import '../css/materi.css';
+import '../css/tugas.css';
 
 // ✅ Import router
 import { initRouter } from './router.js';
@@ -38,10 +44,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const router = initRouter();
   window.__loadedModules.router = true;
   
-  // ✅ Detect page dan load module yang sesuai UNTUK INITIAL PAGE LOAD
+  // ✅ UPDATED: Detect page dan load module yang sesuai UNTUK INITIAL PAGE LOAD
   const currentPath = window.location.pathname;
   
-  if (currentPath.includes('materi') || document.querySelector('.materi-card')) {
+  // Check materi list page
+  if ((currentPath === '/materi' || currentPath.startsWith('/materi?')) && 
+      document.querySelector('.materi-card')) {
     import('./materi.js').then(module => {
       module.initMateriApp();
       window.__loadedModules.materi = true;
@@ -51,18 +59,30 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  if (currentPath.includes('materi/show') || document.querySelector('.pdf-viewer')) {
+  // ✅ UPDATED: Check materi show page dengan multiple detection methods
+  const materiShowMatch = currentPath.match(/^\/materi\/(\d+)$/);
+  if (materiShowMatch || document.querySelector('.pdf-viewer-container')) {
     import('./materi-show.js').then(module => {
-      const materiId = document.body.getAttribute('data-materi-id');
-      new module.MateriShowApp(materiId);
-      window.__loadedModules.materishow = true;
-      console.log('✅ Materi-Show module loaded (initial)');
+      // Extract ID dari URL, body attribute, atau fallback
+      const materiId = 
+        materiShowMatch ? materiShowMatch[1] :
+        document.body.getAttribute('data-materi-id') ||
+        currentPath.match(/\/materi\/(\d+)/)?.[1];
+      
+      if (materiId) {
+        new module.MateriShowApp(materiId);
+        window.__loadedModules.materishow = true;
+        console.log('✅ Materi-Show module loaded for ID:', materiId);
+      } else {
+        console.warn('⚠️ Materi ID not found, but on show page');
+      }
     }).catch(err => {
       console.error('❌ Failed to load Materi-Show module:', err);
     });
   }
   
-  if (currentPath.includes('tugas') || document.querySelector('.tugas-item')) {
+  // Check tugas page
+  if (currentPath.startsWith('/tugas') && document.querySelector('.tugas-item')) {
     import('./tugas.js').then(module => {
       module.initTugasApp();
       window.__loadedModules.tugas = true;
@@ -72,7 +92,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
   
-  if (currentPath.includes('jadwal') || document.querySelector('.class-item, .upcoming-card')) {
+  // Check jadwal page
+  if (currentPath.startsWith('/jadwal') && 
+      (document.querySelector('.class-item') || document.querySelector('.upcoming-card'))) {
     import('./jadwal.js').then(module => {
       module.initJadwalApp();
       window.__loadedModules.jadwal = true;
@@ -99,6 +121,11 @@ window.testSPA = () => {
   console.log('- Click sidebar links (should load without full refresh)');
   console.log('- Check Network tab (should only fetch HTML, not all assets)');
   console.log('- Observe loading animation');
+  console.log('');
+  console.log('Test Materi Show:');
+  console.log('- Click "Lanjutkan" on any materi card');
+  console.log('- Should load show page with PDF viewer');
+  console.log('- Back button should work smoothly');
 };
 
 console.log('💡 Run testSPA() in console to check SPA functionality');

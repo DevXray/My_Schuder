@@ -102,6 +102,15 @@ class MateriController extends Controller
     public function show($id)
     {
         $materi = Materi::with('dosen')->findOrFail($id);
+        
+        // ✅ Check if AJAX request
+        if (request()->ajax() || request()->wantsJson()) {
+            return response()->json([
+                'mainContent' => view('partials.materi-show-content', compact('materi'))->render(),
+                'title' => $materi->judul . ' - My Schuder'
+            ]);
+        }
+        
         return view('materi.show', compact('materi'));
     }
 

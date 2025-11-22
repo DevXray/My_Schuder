@@ -15,24 +15,35 @@ export class AppConfig {
                    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
 }
 
-// ========== UI MANAGER BASE CLASS ==========
+// ========== UI MANAGER BASE CLASS (FIXED) ==========
 export class UIManager {
   constructor(elementId) {
-    this.element = typeof elementId === 'string' 
-      ? document.getElementById(elementId) 
-      : elementId;
+    // ✅ Handle both string ID and direct element
+    if (typeof elementId === 'string') {
+      this.element = document.getElementById(elementId);
+    } else if (elementId instanceof HTMLElement) {
+      this.element = elementId;
+    } else {
+      this.element = elementId; // Could be null
+    }
   }
 
   show() {
-    this.element?.classList.add('active');
+    if (this.element) {
+      this.element.classList.add('active');
+    }
   }
 
   hide() {
-    this.element?.classList.remove('active');
+    if (this.element) {
+      this.element.classList.remove('active');
+    }
   }
 
   toggle() {
-    this.element?.classList.toggle('active');
+    if (this.element) {
+      this.element.classList.toggle('active');
+    }
   }
 
   isActive() {
@@ -40,7 +51,7 @@ export class UIManager {
   }
 }
 
-// ========== SIDEBAR MANAGER (SINGLETON) ==========
+// ========== SIDEBAR MANAGER (COMPLETE FIX) ==========
 export class SidebarManager {
   static instance = null;
 
@@ -53,36 +64,72 @@ export class SidebarManager {
     this.sidebar = new UIManager(sidebarId);
     this.overlay = new UIManager(overlayId);
     
+    // ✅ Store bound handlers for cleanup
+    this.boundToggle = this.toggle.bind(this);
+    this.boundClose = this.close.bind(this);
+    this.boundResize = this.handleResize.bind(this);
+    
     this.initListeners();
     SidebarManager.instance = this;
+    
+    console.log('✅ SidebarManager initialized');
   }
 
   initListeners() {
-    // Remove existing listeners untuk prevent duplikasi
-    const newMenuBtn = this.menuBtn?.cloneNode(true);
-    this.menuBtn?.parentNode?.replaceChild(newMenuBtn, this.menuBtn);
-    this.menuBtn = newMenuBtn;
-
-    const newOverlay = this.overlay.element?.cloneNode(true);
-    this.overlay.element?.parentNode?.replaceChild(newOverlay, this.overlay.element);
-    this.overlay.element = newOverlay;
-
-    this.menuBtn?.addEventListener("click", () => this.toggle());
-    this.overlay.element?.addEventListener("click", () => this.close());
+    // ✅ Remove existing listeners BEFORE adding new ones
+    this.removeListeners();
+    
+    // Add new listeners
+    if (this.menuBtn) {
+      this.menuBtn.addEventListener("click", this.boundToggle);
+      console.log('✅ Menu button listener attached');
+    } else {
+      console.warn('⚠️ Menu button not found');
+    }
+    
+    if (this.overlay.element) {
+      this.overlay.element.addEventListener("click", this.boundClose);
+      console.log('✅ Overlay listener attached');
+    } else {
+      console.warn('⚠️ Overlay element not found');
+    }
     
     // Single resize listener
     if (!window.__sidebarResizeListenerAdded) {
-      window.addEventListener("resize", () => this.handleResize());
+      window.addEventListener("resize", this.boundResize);
       window.__sidebarResizeListenerAdded = true;
+      console.log('✅ Resize listener attached');
+    }
+  }
+
+  removeListeners() {
+    if (this.menuBtn) {
+      this.menuBtn.removeEventListener("click", this.boundToggle);
+    }
+    if (this.overlay.element) {
+      this.overlay.element.removeEventListener("click", this.boundClose);
     }
   }
 
   toggle() {
-    this.sidebar.toggle();
-    this.overlay.toggle();
+    const isActive = this.sidebar.isActive();
+    console.log('🔄 Sidebar toggle:', { wasActive: isActive, willBeActive: !isActive });
+    
+    if (isActive) {
+      this.close();
+    } else {
+      this.open();
+    }
+  }
+
+  open() {
+    console.log('📂 Opening sidebar');
+    this.sidebar.show();
+    this.overlay.show();
   }
 
   close() {
+    console.log('📁 Closing sidebar');
     this.sidebar.hide();
     this.overlay.hide();
   }
@@ -91,6 +138,29 @@ export class SidebarManager {
     if (window.innerWidth > 768) {
       this.close();
     }
+  }
+
+  // ✅ Method to re-initialize after SPA navigation
+  reinitialize() {
+    console.log('🔄 Re-initializing sidebar...');
+    
+    // Re-get DOM elements
+    this.menuBtn = document.getElementById('menuBtn');
+    
+    const sidebarElement = document.getElementById('sidebar');
+    if (sidebarElement) {
+      this.sidebar = new UIManager(sidebarElement);
+    }
+    
+    const overlayElement = document.getElementById('overlay');
+    if (overlayElement) {
+      this.overlay = new UIManager(overlayElement);
+    }
+    
+    // Re-attach listeners
+    this.initListeners();
+    
+    console.log('✅ Sidebar re-initialized successfully');
   }
 
   static getInstance() {
@@ -276,36 +346,6 @@ export class NotificationManager {
     document.head.appendChild(style);
   }
 }
-
-// ========== LOADING SCREEN MANAGER ==========
-export class LoadingScreenManager extends UIManager {
-  constructor(elementId = 'loadingScreen') {
-    super(elementId);
-    this.initialized = false;
-  }
-
-  init() {
-    if (this.initialized) return;
-    
-    document.addEventListener("DOMContentLoaded", () => {
-      window.addEventListener("load", () => this.hideWithTransition());
-    });
-    
-    setTimeout(() => this.hideWithTransition(), 3000);
-    this.initialized = true;
-  }
-
-  hideWithTransition() {
-    if (this.element && !this.element.classList.contains("hidden")) {
-      this.element.classList.add("hidden");
-      setTimeout(() => {
-        this.element.style.display = "none";
-      }, 500);
-    }
-  }
-}
-
-// resources/js/core.js - NAVIGATION MANAGER (FIXED UNTUK SPA)
 
 // ========== NAVIGATION MANAGER (Client-Side) ==========
 export class NavigationManager {
