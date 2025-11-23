@@ -10,6 +10,7 @@ use App\Models\Mahasiswa;
 use App\Models\MataKuliah;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
 
 class AdministratorController extends Controller
 {
@@ -17,22 +18,120 @@ class AdministratorController extends Controller
     public function index()
     {
         $stats = [
+            'total_users' => User::count(),
             'total_admin' => User::where('role', 'admin')->count(),
-            'total_dosen' => Dosen::count(),
-            'total_mahasiswa' => Mahasiswa::count(),
-            'total_matakuliah' => MataKuliah::count(),
+            'total_dosen' => User::where('role', 'dosen')->count(),
+            'total_mahasiswa' => User::where('role', 'mahasiswa')->count(),
         ];
 
-        $recentDosen = Dosen::latest()->take(5)->get();
-        $recentMahasiswa = Mahasiswa::latest()->take(5)->get();
+        $recentUsers = User::latest()->take(10)->get();
 
-        return view('administrator.index', compact('stats', 'recentDosen', 'recentMahasiswa'));
+        return view('administrator.index', compact('stats', 'recentUsers'));
     }
 
-    // ===== MAHASISWA CRUD =====
+    // ===== USER MANAGEMENT (ALL USERS) =====
+    public function userIndex()
+    {
+        $users = User::latest()->paginate(15);
+        return view('administrator.users.index', compact('users'));
+    }
+
+    public function userCreate()
+    {
+        return view('administrator.users.create');
+    }
+
+    public function userStore(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
+            'password' => 'required|min:8|confirmed',
+            'role' => 'required|in:admin,dosen,mahasiswa',
+        ]);
+
+        $validated['password'] = Hash::make($validated['password']);
+        
+        User::create($validated);
+
+        return redirect()->route('administrator.users.index')
+            ->with('success', 'User berhasil ditambahkan');
+    }
+
+    public function userEdit($id)
+    {
+        $user = User::findOrFail($id);
+        return view('administrator.users.edit', compact('user'));
+    }
+
+    public function userUpdate(Request $request, $id)
+    {
+        $user = User::findOrFail($id);
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email,'.$id,
+            'role' => 'required|in:admin,dosen,mahasiswa',
+            'password' => 'nullable|min:8|confirmed',
+        ]);
+
+        if ($request->filled('password')) {
+            $validated['password'] = Hash::make($request->password);
+        } else {
+            unset($validated['password']);
+        }
+
+        $user->update($validated);
+
+        return redirect()->route('administrator.users.index')
+            ->with('success', 'User berhasil diupdate');
+    }
+
+    public function userDestroy($id)
+    {
+        $user = User::findOrFail($id);
+        
+        // Prevent deleting yourself
+        if ($user->id === auth()->id()) {
+            return redirect()->route('administrator.users.index')
+                ->with('error', 'Anda tidak dapat menghapus akun sendiri!');
+        }
+
+        $user->delete();
+
+        return redirect()->route('administrator.users.index')
+            ->with('success', 'User berhasil dihapus');
+    }
+
+    // Quick role change
+    public function changeRole(Request $request, $id)
+    {
+        $user = User::findOrFail($id);
+        
+        $validated = $request->validate([
+            'role' => 'required|in:admin,dosen,mahasiswa',
+        ]);
+
+        // Prevent changing your own role
+        if ($user->id === auth()->id()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak dapat mengubah role sendiri!'
+            ], 403);
+        }
+
+        $user->update(['role' => $validated['role']]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Role berhasil diubah menjadi ' . $validated['role']
+        ]);
+    }
+
+    // ===== MAHASISWA CRUD (Legacy - Optional) =====
     public function mahasiswaIndex()
     {
-        $mahasiswas = Mahasiswa::latest()->paginate(15);
+        $mahasiswas = User::where('role', 'mahasiswa')->latest()->paginate(15);
         return view('administrator.mahasiswa.index', compact('mahasiswas'));
     }
 
@@ -44,16 +143,15 @@ class AdministratorController extends Controller
     public function mahasiswaStore(Request $request)
     {
         $validated = $request->validate([
-            'nama' => 'required|string|max:100',
-            'nim' => 'required|string|max:20|unique:mahasiswas,nim',
-            'email' => 'required|email|unique:mahasiswas,email',
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
             'password' => 'required|min:8',
-            'jurusan' => 'nullable|string|max:100',
-            'kelas' => 'nullable|string|max:50',
         ]);
 
         $validated['password'] = Hash::make($validated['password']);
-        Mahasiswa::create($validated);
+        $validated['role'] = 'mahasiswa';
+        
+        User::create($validated);
 
         return redirect()->route('administrator.mahasiswa.index')
             ->with('success', 'Mahasiswa berhasil ditambahkan');
@@ -61,20 +159,17 @@ class AdministratorController extends Controller
 
     public function mahasiswaEdit($id)
     {
-        $mahasiswa = Mahasiswa::findOrFail($id);
+        $mahasiswa = User::where('role', 'mahasiswa')->findOrFail($id);
         return view('administrator.mahasiswa.edit', compact('mahasiswa'));
     }
 
     public function mahasiswaUpdate(Request $request, $id)
     {
-        $mahasiswa = Mahasiswa::findOrFail($id);
+        $mahasiswa = User::where('role', 'mahasiswa')->findOrFail($id);
 
         $validated = $request->validate([
-            'nama' => 'required|string|max:100',
-            'nim' => 'required|string|max:20|unique:mahasiswas,nim,'.$id,
-            'email' => 'required|email|unique:mahasiswas,email,'.$id,
-            'jurusan' => 'nullable|string|max:100',
-            'kelas' => 'nullable|string|max:50',
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email,'.$id,
         ]);
 
         if ($request->filled('password')) {
@@ -89,17 +184,17 @@ class AdministratorController extends Controller
 
     public function mahasiswaDestroy($id)
     {
-        $mahasiswa = Mahasiswa::findOrFail($id);
+        $mahasiswa = User::where('role', 'mahasiswa')->findOrFail($id);
         $mahasiswa->delete();
 
         return redirect()->route('administrator.mahasiswa.index')
             ->with('success', 'Mahasiswa berhasil dihapus');
     }
 
-    // ===== DOSEN CRUD =====
+    // ===== DOSEN CRUD (Legacy - Optional) =====
     public function dosenIndex()
     {
-        $dosens = Dosen::latest()->paginate(15);
+        $dosens = User::where('role', 'dosen')->latest()->paginate(15);
         return view('administrator.dosen.index', compact('dosens'));
     }
 
@@ -111,14 +206,15 @@ class AdministratorController extends Controller
     public function dosenStore(Request $request)
     {
         $validated = $request->validate([
-            'nama' => 'required|string|max:255',
-            'nidn' => 'required|string|max:20|unique:dosens,nidn',
-            'email' => 'required|email|unique:dosens,email',
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
             'password' => 'required|min:8',
         ]);
 
         $validated['password'] = Hash::make($validated['password']);
-        Dosen::create($validated);
+        $validated['role'] = 'dosen';
+        
+        User::create($validated);
 
         return redirect()->route('administrator.dosen.index')
             ->with('success', 'Dosen berhasil ditambahkan');
@@ -126,18 +222,17 @@ class AdministratorController extends Controller
 
     public function dosenEdit($id)
     {
-        $dosen = Dosen::findOrFail($id);
+        $dosen = User::where('role', 'dosen')->findOrFail($id);
         return view('administrator.dosen.edit', compact('dosen'));
     }
 
     public function dosenUpdate(Request $request, $id)
     {
-        $dosen = Dosen::findOrFail($id);
+        $dosen = User::where('role', 'dosen')->findOrFail($id);
 
         $validated = $request->validate([
-            'nama' => 'required|string|max:255',
-            'nidn' => 'required|string|max:20|unique:dosens,nidn,'.$id,
-            'email' => 'required|email|unique:dosens,email,'.$id,
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email,'.$id,
         ]);
 
         if ($request->filled('password')) {
@@ -152,7 +247,7 @@ class AdministratorController extends Controller
 
     public function dosenDestroy($id)
     {
-        $dosen = Dosen::findOrFail($id);
+        $dosen = User::where('role', 'dosen')->findOrFail($id);
         $dosen->delete();
 
         return redirect()->route('administrator.dosen.index')
@@ -168,7 +263,7 @@ class AdministratorController extends Controller
 
     public function mataKuliahCreate()
     {
-        $dosens = Dosen::all();
+        $dosens = User::where('role', 'dosen')->get();
         return view('administrator.matakuliah.create', compact('dosens'));
     }
 
@@ -177,7 +272,7 @@ class AdministratorController extends Controller
         $validated = $request->validate([
             'kode_mk' => 'required|string|max:20|unique:mata_kuliahs,kode_mk',
             'nama_mk' => 'required|string|max:255',
-            'dosen_id' => 'required|exists:dosens,id',
+            'dosen_id' => 'required|exists:users,id',
             'sks' => 'required|integer|min:1|max:6',
             'semester' => 'required|integer|min:1|max:8',
             'kategori' => 'required|in:wajib,pilihan',
@@ -193,7 +288,7 @@ class AdministratorController extends Controller
     public function mataKuliahEdit($id)
     {
         $mataKuliah = MataKuliah::findOrFail($id);
-        $dosens = Dosen::all();
+        $dosens = User::where('role', 'dosen')->get();
         return view('administrator.matakuliah.edit', compact('mataKuliah', 'dosens'));
     }
 
@@ -204,7 +299,7 @@ class AdministratorController extends Controller
         $validated = $request->validate([
             'kode_mk' => 'required|string|max:20|unique:mata_kuliahs,kode_mk,'.$id,
             'nama_mk' => 'required|string|max:255',
-            'dosen_id' => 'required|exists:dosens,id',
+            'dosen_id' => 'required|exists:users,id',
             'sks' => 'required|integer|min:1|max:6',
             'semester' => 'required|integer|min:1|max:8',
             'kategori' => 'required|in:wajib,pilihan',
@@ -224,5 +319,43 @@ class AdministratorController extends Controller
 
         return redirect()->route('administrator.matakuliah.index')
             ->with('success', 'Mata Kuliah berhasil dihapus');
+    }
+
+    // ===== BULK ACTIONS =====
+    public function bulkDelete(Request $request)
+    {
+        $validated = $request->validate([
+            'user_ids' => 'required|array',
+            'user_ids.*' => 'exists:users,id',
+        ]);
+
+        // Prevent deleting yourself
+        $userIds = array_filter($validated['user_ids'], function($id) {
+            return $id != auth()->id();
+        });
+
+        User::whereIn('id', $userIds)->delete();
+
+        return redirect()->back()
+            ->with('success', count($userIds) . ' user berhasil dihapus');
+    }
+
+    public function bulkChangeRole(Request $request)
+    {
+        $validated = $request->validate([
+            'user_ids' => 'required|array',
+            'user_ids.*' => 'exists:users,id',
+            'role' => 'required|in:admin,dosen,mahasiswa',
+        ]);
+
+        // Prevent changing your own role
+        $userIds = array_filter($validated['user_ids'], function($id) {
+            return $id != auth()->id();
+        });
+
+        User::whereIn('id', $userIds)->update(['role' => $validated['role']]);
+
+        return redirect()->back()
+            ->with('success', count($userIds) . ' user role berhasil diubah menjadi ' . $validated['role']);
     }
 }

@@ -1,4 +1,4 @@
-{{-- resources/views/administrator/index.blade.php --}}
+{{-- resources/views/administrator/index.blade.php (ENHANCED) --}}
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -20,7 +20,7 @@
             <div class="page-header-content">
                 <div class="page-title-section">
                     <h1><i class="fas fa-user-shield"></i> Administrator Dashboard</h1>
-                    <p>Kelola data mahasiswa, dosen, dan mata kuliah</p>
+                    <p>Kelola semua aspek sistem pembelajaran</p>
                 </div>
             </div>
         </section>
@@ -41,10 +41,21 @@
 
         <!-- Stats Grid -->
         <section class="stats-grid">
+            <div class="stat-card red">
+                <div class="stat-icon"><i class="fas fa-users"></i></div>
+                <div class="stat-content">
+                    <h3>Total Users</h3>
+                    <p class="stat-number">{{ $stats['total_users'] }}</p>
+                    <span class="stat-change">
+                        <i class="fas fa-users-cog"></i> Semua Pengguna
+                    </span>
+                </div>
+            </div>
+
             <div class="stat-card blue">
                 <div class="stat-icon"><i class="fas fa-user-shield"></i></div>
                 <div class="stat-content">
-                    <h3>Total Admin</h3>
+                    <h3>Admin</h3>
                     <p class="stat-number">{{ $stats['total_admin'] }}</p>
                     <span class="stat-change">
                         <i class="fas fa-shield-alt"></i> Super Users
@@ -55,7 +66,7 @@
             <div class="stat-card orange">
                 <div class="stat-icon"><i class="fas fa-chalkboard-teacher"></i></div>
                 <div class="stat-content">
-                    <h3>Total Dosen</h3>
+                    <h3>Dosen</h3>
                     <p class="stat-number">{{ $stats['total_dosen'] }}</p>
                     <span class="stat-change">
                         <i class="fas fa-user-tie"></i> Pengajar
@@ -66,21 +77,10 @@
             <div class="stat-card green">
                 <div class="stat-icon"><i class="fas fa-user-graduate"></i></div>
                 <div class="stat-content">
-                    <h3>Total Mahasiswa</h3>
+                    <h3>Mahasiswa</h3>
                     <p class="stat-number">{{ $stats['total_mahasiswa'] }}</p>
                     <span class="stat-change">
                         <i class="fas fa-users"></i> Peserta Didik
-                    </span>
-                </div>
-            </div>
-
-            <div class="stat-card blue">
-                <div class="stat-icon"><i class="fas fa-book"></i></div>
-                <div class="stat-content">
-                    <h3>Mata Kuliah</h3>
-                    <p class="stat-number">{{ $stats['total_matakuliah'] }}</p>
-                    <span class="stat-change">
-                        <i class="fas fa-graduation-cap"></i> Program Studi
                     </span>
                 </div>
             </div>
@@ -88,9 +88,29 @@
 
         <!-- Quick Actions -->
         <section style="margin-bottom: 2rem;">
+            <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; color: #1f2937;">
+                <i class="fas fa-bolt"></i> Quick Actions
+            </h2>
+            
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
                 
-                <!-- Manage Mahasiswa -->
+                <!-- Kelola Semua User -->
+                <div class="info-card" style="border-left: 4px solid #ef4444;">
+                    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                        <div style="width: 50px; height: 50px; background: #fee2e2; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-users-cog" style="font-size: 1.5rem; color: #ef4444;"></i>
+                        </div>
+                        <div>
+                            <h3 style="margin: 0; font-size: 1.1rem;">Kelola Semua User</h3>
+                            <p style="margin: 0; font-size: 0.875rem; color: #6b7280;">CRUD user & ubah role</p>
+                        </div>
+                    </div>
+                    <a href="{{ route('administrator.users.index') }}" class="btn-action primary" style="width: 100%; text-decoration: none;">
+                        <i class="fas fa-arrow-right"></i> Kelola User
+                    </a>
+                </div>
+
+                <!-- Kelola Mahasiswa -->
                 <div class="info-card" style="border-left: 4px solid #10b981;">
                     <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
                         <div style="width: 50px; height: 50px; background: #d1fae5; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
@@ -98,7 +118,7 @@
                         </div>
                         <div>
                             <h3 style="margin: 0; font-size: 1.1rem;">Kelola Mahasiswa</h3>
-                            <p style="margin: 0; font-size: 0.875rem; color: #6b7280;">Tambah, edit, hapus data mahasiswa</p>
+                            <p style="margin: 0; font-size: 0.875rem; color: #6b7280;">Khusus data mahasiswa</p>
                         </div>
                     </div>
                     <a href="{{ route('administrator.mahasiswa.index') }}" class="btn-action primary" style="width: 100%; text-decoration: none;">
@@ -106,7 +126,7 @@
                     </a>
                 </div>
 
-                <!-- Manage Dosen -->
+                <!-- Kelola Dosen -->
                 <div class="info-card" style="border-left: 4px solid #f59e0b;">
                     <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
                         <div style="width: 50px; height: 50px; background: #fef3c7; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
@@ -114,7 +134,7 @@
                         </div>
                         <div>
                             <h3 style="margin: 0; font-size: 1.1rem;">Kelola Dosen</h3>
-                            <p style="margin: 0; font-size: 0.875rem; color: #6b7280;">Tambah, edit, hapus data dosen</p>
+                            <p style="margin: 0; font-size: 0.875rem; color: #6b7280;">Khusus data dosen</p>
                         </div>
                     </div>
                     <a href="{{ route('administrator.dosen.index') }}" class="btn-action primary" style="width: 100%; text-decoration: none; background: linear-gradient(135deg, #f59e0b, #d97706);">
@@ -122,99 +142,55 @@
                     </a>
                 </div>
 
-                <!-- Manage Mata Kuliah -->
-                <div class="info-card" style="border-left: 4px solid #3b82f6;">
-                    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
-                        <div style="width: 50px; height: 50px; background: #dbeafe; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
-                            <i class="fas fa-book-open" style="font-size: 1.5rem; color: #3b82f6;"></i>
-                        </div>
-                        <div>
-                            <h3 style="margin: 0; font-size: 1.1rem;">Kelola Mata Kuliah</h3>
-                            <p style="margin: 0; font-size: 0.875rem; color: #6b7280;">Tambah, edit, hapus mata kuliah</p>
-                        </div>
-                    </div>
-                    <a href="{{ route('administrator.matakuliah.index') }}" class="btn-action primary" style="width: 100%; text-decoration: none;">
-                        <i class="fas fa-arrow-right"></i> Kelola Mata Kuliah
-                    </a>
-                </div>
-
             </div>
         </section>
 
-        <!-- Recent Data Tables -->
-        <div class="content-grid">
-            <!-- Recent Dosen -->
-            <section class="card">
-                <div class="card-header">
-                    <h3><i class="fas fa-chalkboard-teacher"></i> Dosen Terbaru</h3>
-                    <a href="{{ route('administrator.dosen.index') }}" class="view-all-btn">
-                        Lihat Semua <i class="fas fa-arrow-right"></i>
-                    </a>
-                </div>
-                <div class="card-body">
-                    <table style="width: 100%; border-collapse: collapse;">
-                        <thead>
-                            <tr style="border-bottom: 2px solid #e5e7eb;">
-                                <th style="padding: 0.75rem; text-align: left; font-size: 0.875rem; color: #6b7280;">NIDN</th>
-                                <th style="padding: 0.75rem; text-align: left; font-size: 0.875rem; color: #6b7280;">Nama</th>
-                                <th style="padding: 0.75rem; text-align: left; font-size: 0.875rem; color: #6b7280;">Email</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse($recentDosen as $dosen)
-                            <tr style="border-bottom: 1px solid #f3f4f6;">
-                                <td style="padding: 0.75rem; font-size: 0.875rem;">{{ $dosen->nidn }}</td>
-                                <td style="padding: 0.75rem; font-weight: 600;">{{ $dosen->nama }}</td>
-                                <td style="padding: 0.75rem; font-size: 0.875rem; color: #6b7280;">{{ $dosen->email }}</td>
-                            </tr>
-                            @empty
-                            <tr>
-                                <td colspan="3" style="padding: 2rem; text-align: center; color: #9ca3af;">
-                                    Belum ada data dosen
-                                </td>
-                            </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
-            </section>
-
-            <!-- Recent Mahasiswa -->
-            <section class="card">
-                <div class="card-header">
-                    <h3><i class="fas fa-user-graduate"></i> Mahasiswa Terbaru</h3>
-                    <a href="{{ route('administrator.mahasiswa.index') }}" class="view-all-btn">
-                        Lihat Semua <i class="fas fa-arrow-right"></i>
-                    </a>
-                </div>
-                <div class="card-body">
-                    <table style="width: 100%; border-collapse: collapse;">
-                        <thead>
-                            <tr style="border-bottom: 2px solid #e5e7eb;">
-                                <th style="padding: 0.75rem; text-align: left; font-size: 0.875rem; color: #6b7280;">NIM</th>
-                                <th style="padding: 0.75rem; text-align: left; font-size: 0.875rem; color: #6b7280;">Nama</th>
-                                <th style="padding: 0.75rem; text-align: left; font-size: 0.875rem; color: #6b7280;">Kelas</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse($recentMahasiswa as $mhs)
-                            <tr style="border-bottom: 1px solid #f3f4f6;">
-                                <td style="padding: 0.75rem; font-size: 0.875rem;">{{ $mhs->nim }}</td>
-                                <td style="padding: 0.75rem; font-weight: 600;">{{ $mhs->nama }}</td>
-                                <td style="padding: 0.75rem; font-size: 0.875rem; color: #6b7280;">{{ $mhs->kelas ?? '-' }}</td>
-                            </tr>
-                            @empty
-                            <tr>
-                                <td colspan="3" style="padding: 2rem; text-align: center; color: #9ca3af;">
-                                    Belum ada data mahasiswa
-                                </td>
-                            </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
-            </section>
-        </div>
+        <!-- Recent Users Table -->
+        <section class="card">
+            <div class="card-header">
+                <h3><i class="fas fa-clock"></i> User Terbaru</h3>
+                <a href="{{ route('administrator.users.index') }}" class="view-all-btn">
+                    Lihat Semua <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+            <div class="card-body">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid #e5e7eb;">
+                            <th style="padding: 0.75rem; text-align: left; font-size: 0.875rem; color: #6b7280;">Nama</th>
+                            <th style="padding: 0.75rem; text-align: left; font-size: 0.875rem; color: #6b7280;">Email</th>
+                            <th style="padding: 0.75rem; text-align: left; font-size: 0.875rem; color: #6b7280;">Role</th>
+                            <th style="padding: 0.75rem; text-align: left; font-size: 0.875rem; color: #6b7280;">Terdaftar</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($recentUsers as $user)
+                        <tr style="border-bottom: 1px solid #f3f4f6;">
+                            <td style="padding: 0.75rem; font-weight: 600;">{{ $user->name }}</td>
+                            <td style="padding: 0.75rem; font-size: 0.875rem; color: #6b7280;">{{ $user->email }}</td>
+                            <td style="padding: 0.75rem;">
+                                <span style="padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase;
+                                    {{ $user->role === 'admin' ? 'background: #fee2e2; color: #991b1b;' : '' }}
+                                    {{ $user->role === 'dosen' ? 'background: #dbeafe; color: #1e40af;' : '' }}
+                                    {{ $user->role === 'mahasiswa' ? 'background: #d1fae5; color: #065f46;' : '' }}">
+                                    {{ $user->role }}
+                                </span>
+                            </td>
+                            <td style="padding: 0.75rem; font-size: 0.875rem; color: #6b7280;">
+                                {{ $user->created_at->diffForHumans() }}
+                            </td>
+                        </tr>
+                        @empty
+                        <tr>
+                            <td colspan="4" style="padding: 2rem; text-align: center; color: #9ca3af;">
+                                Belum ada data user
+                            </td>
+                        </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </section>
     </main>
 
     @include('partials.chatbot')

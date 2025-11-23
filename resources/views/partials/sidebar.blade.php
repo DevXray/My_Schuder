@@ -1,6 +1,7 @@
-{{-- resources/views/partials/sidebar.blade.php (UPDATED) --}}
+{{-- resources/views/partials/sidebar.blade.php (FIXED) --}}
 <aside class="sidebar" id="sidebar">
     <nav class="sidebar-nav">
+        {{-- Dashboard - Untuk Semua Role --}}
         <a href="/dashboard" class="nav-item {{ request()->is('dashboard') ? 'active' : '' }}">
             <i class="fas fa-home"></i>
             <span>Dashboard</span>
@@ -16,24 +17,25 @@
         </a>
         @endif
         
-        {{-- ✅ MAHASISWA: Materi Menu --}}
-        @if(Auth::check() && Auth::user()->isMahasiswa() && Auth::user()->isAdmin())
-        <a href="/materi" class="nav-item {{ request()->is('materi') ? 'active' : '' }}">
+        {{-- ✅ MATERI - Untuk Admin & Mahasiswa (bukan Dosen sendirian) --}}
+        @if(Auth::check() && (Auth::user()->isAdmin() || Auth::user()->isMahasiswa()))
+        <a href="/materi" class="nav-item {{ request()->is('materi*') && !request()->is('administrator*') ? 'active' : '' }}">
             <i class="fas fa-book"></i>
             <span>Materi Kelas</span>
             <div class="nav-indicator"></div>
         </a>
         @endif
         
-        {{-- ✅ DOSEN: Upload Materi --}}
-        @if(Auth::check() && Auth::user()->isDosen() && Auth::user()->isAdmin())
-        <a href="/materi" class="nav-item {{ request()->is('materi') ? 'active' : '' }}">
-            <i class="fas fa-book"></i>
+        {{-- ✅ DOSEN: Kelola Materi (Upload & Management) --}}
+        @if(Auth::check() && Auth::user()->isDosen())
+        <a href="/materi" class="nav-item {{ request()->is('materi*') ? 'active' : '' }}">
+            <i class="fas fa-book-open"></i>
             <span>Kelola Materi</span>
             <div class="nav-indicator"></div>
         </a>
         @endif
         
+        {{-- Peserta - Untuk Semua Role --}}
         <a href="/peserta" class="nav-item {{ request()->is('peserta') ? 'active' : '' }}">
             <i class="fas fa-users"></i>
             <span>Peserta</span>
@@ -41,17 +43,20 @@
             <div class="nav-indicator"></div>
         </a>
         
-        <a href="/tugas" class="nav-item {{ request()->is('tugas') ? 'active' : '' }}">
+        {{-- Tugas - Untuk Semua Role --}}
+        <a href="/tugas" class="nav-item {{ request()->is('tugas*') ? 'active' : '' }}">
             <i class="fas fa-file-alt"></i>
             <span>Tugas</span>
         </a>
         
-        <a href="/jadwal" class="nav-item {{ request()->is('jadwal') ? 'active' : '' }}">
+        {{-- Jadwal - Untuk Semua Role --}}
+        <a href="/jadwal" class="nav-item {{ request()->is('jadwal*') ? 'active' : '' }}">
             <i class="fas fa-calendar"></i>
             <span>Jadwal</span>
             <div class="nav-indicator"></div>
         </a>
         
+        {{-- Pengaturan - Untuk Semua Role --}}
         <a href="/pengaturan" class="nav-item {{ request()->is('pengaturan') ? 'active' : '' }}">
             <i class="fas fa-cog"></i>
             <span>Pengaturan</span>
