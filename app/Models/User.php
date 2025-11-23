@@ -15,7 +15,8 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'role', // ✅ Add role
+        'role_id',  // ✅ Add role_id instead of role
+        'email_verified_at',
     ];
 
     protected $hidden = [
@@ -31,20 +32,37 @@ class User extends Authenticatable
         ];
     }
 
-    // ✅ Role Check Methods
+    // app/Models/User.php
+
+    public function role()
+    {
+        return $this->belongsTo(Role::class, 'role_id'); // pastikan foreign key benar
+    }
+
+    public function getRoleName(): string
+    {
+        return $this->role?->name ?? 'guest';
+    }
+
+    public function getRoleDisplayName(): string
+    {
+        return $this->role?->display_name ?? 'Guest';
+    }
+
+    // ✅ Role Check Methods - FIXED with proper relationship checking
     public function isAdmin(): bool
     {
-        return $this->role === 'admin';
+        return $this->getRoleName() === 'admin';
     }
 
     public function isDosen(): bool
     {
-        return $this->role === 'dosen';
+        return $this->getRoleName() === 'dosen';
     }
 
     public function isMahasiswa(): bool
     {
-        return $this->role === 'mahasiswa';
+        return $this->getRoleName() === 'mahasiswa';
     }
 
     // ✅ Relationships

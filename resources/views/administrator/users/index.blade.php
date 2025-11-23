@@ -153,7 +153,7 @@
                         </thead>
                         <tbody>
                             @forelse($users as $user)
-                            <tr class="user-row" data-role="{{ $user->role }}" style="border-bottom: 1px solid #f3f4f6;">
+                            <tr class="user-row" data-role="{{ $user->getRoleName() }}" style="border-bottom: 1px solid #f3f4f6;">
                                 <td style="padding: 1rem;">
                                     <input type="checkbox" class="user-checkbox" value="{{ $user->id }}" 
                                            {{ $user->id === auth()->id() ? 'disabled' : '' }}
@@ -176,7 +176,9 @@
                                 </td>
                                 <td style="padding: 1rem; color: #6b7280;">{{ $user->email }}</td>
                                 <td style="padding: 1rem;">
-                                    <span class="role-badge role-{{ $user->role }}">{{ $user->role }}</span>
+                                    <span class="role-badge role-{{ $user->getRoleName() }}">
+                                        {{ $user->getRoleDisplayName() }}
+                                    </span>
                                 </td>
                                 <td style="padding: 1rem; color: #6b7280; font-size: 0.875rem;">
                                     {{ $user->created_at->format('d M Y') }}
@@ -186,17 +188,17 @@
                                         {{-- Quick Role Change --}}
                                         @if($user->id !== auth()->id())
                                         <div style="display: flex; gap: 0.25rem;">
-                                            @if($user->role !== 'admin')
+                                            @if($user->getRoleName() !== 'admin')
                                             <button class="quick-role-btn" onclick="quickChangeRole({{ $user->id }}, 'admin')" title="Jadikan Admin">
                                                 <i class="fas fa-shield-alt"></i>
                                             </button>
                                             @endif
-                                            @if($user->role !== 'dosen')
+                                            @if($user->getRoleName() !== 'dosen')
                                             <button class="quick-role-btn" onclick="quickChangeRole({{ $user->id }}, 'dosen')" title="Jadikan Dosen">
                                                 <i class="fas fa-chalkboard-teacher"></i>
                                             </button>
                                             @endif
-                                            @if($user->role !== 'mahasiswa')
+                                            @if($user->getRoleName() !== 'mahasiswa')
                                             <button class="quick-role-btn" onclick="quickChangeRole({{ $user->id }}, 'mahasiswa')" title="Jadikan Mahasiswa">
                                                 <i class="fas fa-user-graduate"></i>
                                             </button>
@@ -259,7 +261,8 @@
             event.target.classList.add('active');
             
             rows.forEach(row => {
-                if (role === 'all' || row.dataset.role === role) {
+                const rowRole = row.dataset.role;
+                if (role === 'all' || rowRole === role) {
                     row.style.display = '';
                 } else {
                     row.style.display = 'none';
@@ -280,22 +283,37 @@
                 cancelButtonText: 'Batal'
             }).then((result) => {
                 if (result.isConfirmed) {
+                    // ✅ FIXED: Added debugging
+                    console.log('Changing role for user:', userId, 'to:', newRole);
+                    
                     fetch(`/administrator/users/${userId}/change-role`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
                             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
                         },
-                        body: JSON.stringify({ role: newRole })
+                        body: JSON.stringify({ role_name: newRole }) // ✅ Changed to role_name
                     })
-                    .then(response => response.json())
+                    .then(response => {
+                        console.log('Response status:', response.status);
+                        return response.json();
+                    })
                     .then(data => {
+                        console.log('Response data:', data);
+                        
                         if (data.success) {
                             Swal.fire('Berhasil!', data.message, 'success')
-                                .then(() => location.reload());
+                                .then(() => {
+                                    console.log('Reloading page...');
+                                    location.reload();
+                                });
                         } else {
                             Swal.fire('Gagal!', data.message, 'error');
                         }
+                    })
+                    .catch(error => {
+                        console.error('Fetch error:', error);
+                        Swal.fire('Error!', 'Terjadi kesalahan saat mengubah role', 'error');
                     });
                 }
             });
@@ -401,3 +419,19 @@
     </script>
 </body>
 </html>
+                            Gunakan fitur ini untuk mengatur role user dengan cepat.</small>
+                    </div>
+
+                    <div style="text-align: right;">
+                        <button type="submit" class="btn-primary" style="padding: 0.75rem 1.5rem; font-size: 1rem;">
+                            <i class="fas fa-save"></i> Simpan User
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </section>
+    </main>
+
+    @include('partials.chatbot')
+    <div class="overlay" id="overlay"></div>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>

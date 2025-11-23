@@ -145,7 +145,7 @@ Route::middleware('role:admin')->prefix('administrator')->name('administrator.')
     
     // ✅ PENGATURAN PAGE (All roles)
     Route::get('/pengaturan', function () {
-        return view('dashboard'); // TODO: Create pengaturan view
+        return view('pengaturan.index');
     })->name('pengaturan.index');
     
     // ✅ CHATBOT API ROUTES

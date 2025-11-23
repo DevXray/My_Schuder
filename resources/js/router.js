@@ -22,12 +22,25 @@ class PageLoader {
       console.log('🔄 Fetching page:', path);
       
       const response = await fetch(path, {
+        // Ensure cookies (session) are sent for same-origin requests so Laravel recognizes authenticated user
+        credentials: 'same-origin',
+        redirect: 'manual',
         headers: {
           'X-Requested-With': 'XMLHttpRequest',
           'Accept': 'text/html',
           'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
         }
       });
+
+      // If server returned a redirect to login (401/302), surface a clearer error
+      if (response.status === 401 || response.status === 302) {
+        throw new Error('AUTH_REDIRECT');
+      }
+
+      // If forbidden, surface explicit error so router can handle redirect
+      if (response.status === 403) {
+        throw new Error('HTTP 403');
+      }
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
@@ -78,6 +91,19 @@ class PageLoader {
       return pageData;
     } catch (error) {
       console.error('💥 Page load error:', error);
+      // If auth redirect flagged by server-side, do a full navigation to let backend handle auth
+      if (error?.message === 'AUTH_REDIRECT') {
+        console.warn('🔒 Server requested auth redirect. Navigating to login...');
+        window.location.href = '/login';
+        return;
+      }
+      // Map explicit forbidden status to redirect to login as well
+      if (error?.message === 'HTTP 403' || error?.message?.includes('403')) {
+        console.warn('🔒 Access forbidden. Redirecting to dashboard/login');
+        // Redirect to dashboard or login - prefer login to re-authenticate
+        window.location.href = '/login';
+        return;
+      }
       throw error;
     }
   }
@@ -183,6 +209,10 @@ class Router {
       title: 'Dashboard',
       module: 'dashboard'
     });
+    this.routes.set('/administrator', { 
+      title: 'Administrator',
+      module: 'administrator'
+    });
     this.routes.set('/materi', { 
       title: 'Materi Kelas',
       module: 'materi'
@@ -221,6 +251,35 @@ class Router {
           module: 'tugas-show',
           params: { id: matches[1] }
         })
+      },
+      // ✅ Administrator sub-pages
+      {
+        pattern: /^\/administrator\/users(\/.*)?$/,
+        handler: (matches) => ({
+          title: 'Manajemen Pengguna',
+          module: 'administrator'
+        })
+      },
+      {
+        pattern: /^\/administrator\/mahasiswa(\/.*)?$/,
+        handler: (matches) => ({
+          title: 'Manajemen Mahasiswa',
+          module: 'administrator'
+        })
+      },
+      {
+        pattern: /^\/administrator\/dosen(\/.*)?$/,
+        handler: (matches) => ({
+          title: 'Manajemen Dosen',
+          module: 'administrator'
+        })
+      },
+      {
+        pattern: /^\/administrator\/matakuliah(\/.*)?$/,
+        handler: (matches) => ({
+          title: 'Manajemen Mata Kuliah',
+          module: 'administrator'
+        })
       }
     ];
   }
@@ -244,30 +303,47 @@ class Router {
 
   // Di Router class, method interceptLinks()
 interceptLinks() {
+    console.log('🔗 Setting up link interception...');
+    
     // ✅ Use event delegation with proper type checking
     document.addEventListener('click', (e) => {
-      // ✅ Ensure target is an Element
-      if (!(e.target instanceof Element)) return;
+      // ✅ Ensure target is an Element (not Text Node, Comment, etc)
+      let target = e.target;
       
-      const link = e.target.closest('a[href^="/"]');
+      // If target is not an Element, skip
+      if (!target || !(target instanceof Element)) {
+        console.debug('❌ Click target is not an Element');
+        return;
+      }
       
-      if (!link) return;
+      // ✅ safely use closest() only on Element nodes
+      const link = target.closest('a[href^="/"]');
+      
+      if (!link) {
+        return;
+      }
       
       const href = link.getAttribute('href');
+      console.debug('🔗 Link clicked:', href);
       
       // Only intercept internal links
       if (href && href.startsWith('/') && !href.startsWith('//')) {
         // Don't intercept logout, download, or external links
         if (link.classList.contains('logout') || 
             link.hasAttribute('download') ||
-            link.getAttribute('target') === '_blank') {
+            link.getAttribute('target') === '_blank' ||
+            link.getAttribute('data-no-route') === 'true') {
+          console.debug('⏭️ Skipping route interception for:', href);
           return;
         }
         
         e.preventDefault();
+        console.log('✅ Intercepting navigation to:', href);
         this.navigateTo(href);
       }
-    });
+    }, { passive: false });
+    
+    console.log('✅ Link interception initialized');
   }
 
   async navigateTo(path, pushState = true) {
@@ -569,7 +645,10 @@ interceptLinks() {
 
   enablePrefetch() {
     document.addEventListener('mouseenter', (e) => {
-      const link = e.target.closest('a[href^="/"]');
+      const target = e.target;
+      if (!target || !(target instanceof Element)) return;
+
+      const link = target.closest('a[href^="/"]');
       if (!link) return;
       
       const href = link.getAttribute('href');

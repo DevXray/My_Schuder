@@ -1,4 +1,4 @@
-{{-- resources/views/partials/sidebar.blade.php (FIXED) --}}
+{{-- resources/views/partials/sidebar.blade.php (FIXED with Role Relationship) --}}
 <aside class="sidebar" id="sidebar">
     <nav class="sidebar-nav">
         {{-- Dashboard - Untuk Semua Role --}}
@@ -9,7 +9,7 @@
         </a>
         
         {{-- ✅ ADMIN ONLY: Administrator Menu --}}
-        @if(Auth::check() && Auth::user()->isAdmin())
+        @if(Auth::check() && Auth::user()->getRoleName() === 'admin')
         <a href="/administrator" class="nav-item {{ request()->is('administrator*') ? 'active' : '' }}">
             <i class="fas fa-user-shield"></i>
             <span>Administrator</span>
@@ -18,7 +18,7 @@
         @endif
         
         {{-- ✅ MATERI - Untuk Admin & Mahasiswa (bukan Dosen sendirian) --}}
-        @if(Auth::check() && (Auth::user()->isAdmin() || Auth::user()->isMahasiswa()))
+        @if(Auth::check() && in_array(Auth::user()->getRoleName(), ['admin', 'mahasiswa']))
         <a href="/materi" class="nav-item {{ request()->is('materi*') && !request()->is('administrator*') ? 'active' : '' }}">
             <i class="fas fa-book"></i>
             <span>Materi Kelas</span>
@@ -27,7 +27,7 @@
         @endif
         
         {{-- ✅ DOSEN: Kelola Materi (Upload & Management) --}}
-        @if(Auth::check() && Auth::user()->isDosen())
+        @if(Auth::check() && Auth::user()->getRoleName() === 'dosen')
         <a href="/materi" class="nav-item {{ request()->is('materi*') ? 'active' : '' }}">
             <i class="fas fa-book-open"></i>
             <span>Kelola Materi</span>

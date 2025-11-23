@@ -8,6 +8,7 @@ use App\Models\Admin;
 use App\Models\Dosen;
 use App\Models\Mahasiswa;
 use App\Models\MataKuliah;
+use App\Models\Role; // ✅ Import Role model
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
@@ -19,12 +20,12 @@ class AdministratorController extends Controller
     {
         $stats = [
             'total_users' => User::count(),
-            'total_admin' => User::where('role', 'admin')->count(),
-            'total_dosen' => User::where('role', 'dosen')->count(),
-            'total_mahasiswa' => User::where('role', 'mahasiswa')->count(),
+            'total_admin' => User::byRole('admin')->count(),
+            'total_dosen' => User::byRole('dosen')->count(),
+            'total_mahasiswa' => User::byRole('mahasiswa')->count(),
         ];
 
-        $recentUsers = User::latest()->take(10)->get();
+        $recentUsers = User::with('role')->latest()->take(10)->get();
 
         return view('administrator.index', compact('stats', 'recentUsers'));
     }
@@ -32,13 +33,15 @@ class AdministratorController extends Controller
     // ===== USER MANAGEMENT (ALL USERS) =====
     public function userIndex()
     {
-        $users = User::latest()->paginate(15);
-        return view('administrator.users.index', compact('users'));
+        $users = User::with('role')->latest()->paginate(15);
+        $roles = Role::all(); // ✅ Pass roles to view
+        return view('administrator.users.index', compact('users', 'roles'));
     }
 
     public function userCreate()
     {
-        return view('administrator.users.create');
+        $roles = Role::all(); // ✅ Pass roles to view
+        return view('administrator.users.create', compact('roles'));
     }
 
     public function userStore(Request $request)
@@ -47,12 +50,22 @@ class AdministratorController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
             'password' => 'required|min:8|confirmed',
-            'role' => 'required|in:admin,dosen,mahasiswa',
+            'role_name' => 'required|in:admin,dosen,mahasiswa', // ✅ Changed to role_name
         ]);
 
-        $validated['password'] = Hash::make($validated['password']);
+        // ✅ Get role_id from role name
+        $roleId = Role::getIdByName($validated['role_name']);
         
-        User::create($validated);
+        if (!$roleId) {
+            return back()->withErrors(['role_name' => 'Role tidak valid']);
+        }
+
+        User::create([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => Hash::make($validated['password']),
+            'role_id' => $roleId, // ✅ Store role_id
+        ]);
 
         return redirect()->route('administrator.users.index')
             ->with('success', 'User berhasil ditambahkan');
@@ -60,8 +73,9 @@ class AdministratorController extends Controller
 
     public function userEdit($id)
     {
-        $user = User::findOrFail($id);
-        return view('administrator.users.edit', compact('user'));
+        $user = User::with('role')->findOrFail($id);
+        $roles = Role::all(); // ✅ Pass roles to view
+        return view('administrator.users.edit', compact('user', 'roles'));
     }
 
     public function userUpdate(Request $request, $id)
@@ -71,17 +85,28 @@ class AdministratorController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email,'.$id,
-            'role' => 'required|in:admin,dosen,mahasiswa',
+            'role_name' => 'required|in:admin,dosen,mahasiswa', // ✅ Changed to role_name
             'password' => 'nullable|min:8|confirmed',
         ]);
 
-        if ($request->filled('password')) {
-            $validated['password'] = Hash::make($request->password);
-        } else {
-            unset($validated['password']);
+        // ✅ Get role_id from role name
+        $roleId = Role::getIdByName($validated['role_name']);
+        
+        if (!$roleId) {
+            return back()->withErrors(['role_name' => 'Role tidak valid']);
         }
 
-        $user->update($validated);
+        $updateData = [
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'role_id' => $roleId, // ✅ Update role_id
+        ];
+
+        if ($request->filled('password')) {
+            $updateData['password'] = Hash::make($request->password);
+        }
+
+        $user->update($updateData);
 
         return redirect()->route('administrator.users.index')
             ->with('success', 'User berhasil diupdate');
@@ -109,7 +134,7 @@ class AdministratorController extends Controller
         $user = User::findOrFail($id);
         
         $validated = $request->validate([
-            'role' => 'required|in:admin,dosen,mahasiswa',
+            'role_name' => 'required|in:admin,dosen,mahasiswa', // ✅ Changed to role_name
         ]);
 
         // Prevent changing your own role
@@ -120,11 +145,39 @@ class AdministratorController extends Controller
             ], 403);
         }
 
-        $user->update(['role' => $validated['role']]);
+        // ✅ Get role_id from role name
+        $roleId = Role::getIdByName($validated['role_name']);
+        
+        if (!$roleId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Role tidak valid'
+            ], 400);
+        }
+
+        // ✅ Update role_id
+        $user->role_id = $roleId;
+        $user->save();
+        
+        // Refresh to get updated role relationship
+        $user->refresh();
+        
+        // ✅ Log untuk debugging
+        \Log::info('Role changed', [
+            'user_id' => $user->id,
+            'new_role_id' => $roleId,
+            'new_role_name' => $user->getRoleName()
+        ]);
 
         return response()->json([
             'success' => true,
-            'message' => 'Role berhasil diubah menjadi ' . $validated['role']
+            'message' => 'Role berhasil diubah menjadi ' . $user->getRoleDisplayName(),
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'role_name' => $user->getRoleName(),
+                'role_display' => $user->getRoleDisplayName()
+            ]
         ]);
     }
 

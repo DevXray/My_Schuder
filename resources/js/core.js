@@ -177,6 +177,14 @@ export class LoadingScreenManager {
     this.element = document.getElementById(elementId);
   }
 
+  // ✅ ADD init() method to match expected API
+  init() {
+    console.log('✅ LoadingScreenManager initialized');
+    // Loading screen is already initialized from HTML
+    // This method is called for consistency with other managers
+    return this;
+  }
+
   show() {
     if (this.element) {
       this.element.style.display = 'flex';

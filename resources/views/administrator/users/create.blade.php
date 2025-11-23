@@ -60,14 +60,14 @@
                         <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #374151;">
                             <i class="fas fa-user-tag"></i> Role <span style="color: #ef4444;">*</span>
                         </label>
-                        <select name="role" required
+                        <select name="role_name" required
                                 style="width: 100%; padding: 0.75rem; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 1rem;">
                             <option value="">-- Pilih Role --</option>
-                            <option value="admin" {{ old('role') === 'admin' ? 'selected' : '' }}>Admin (Akses Penuh)</option>
-                            <option value="dosen" {{ old('role') === 'dosen' ? 'selected' : '' }}>Dosen (Pengajar)</option>
-                            <option value="mahasiswa" {{ old('role') === 'mahasiswa' ? 'selected' : '' }}>Mahasiswa (Peserta Didik)</option>
+                            <option value="admin" {{ old('role_name') === 'admin' ? 'selected' : '' }}>Admin (Akses Penuh)</option>
+                            <option value="dosen" {{ old('role_name') === 'dosen' ? 'selected' : '' }}>Dosen (Pengajar)</option>
+                            <option value="mahasiswa" {{ old('role_name') === 'mahasiswa' ? 'selected' : '' }}>Mahasiswa (Peserta Didik)</option>
                         </select>
-                        @error('role')
+                        @error('role_name')
                             <span style="color: #ef4444; font-size: 0.875rem; margin-top: 0.25rem; display: block;">{{ $message }}</span>
                         @enderror
                         <small style="display: block; margin-top: 0.5rem; color: #6b7280;">
