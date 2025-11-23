@@ -1,4 +1,5 @@
 <?php
+// database/migrations/xxxx_update_materis_table_add_mata_kuliah.php
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
@@ -6,35 +7,23 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
-        Schema::create('materis', function (Blueprint $table) {
-            $table->id();
-            $table->unsignedBigInteger('dosen_id');
-            $table->string('judul');
-            $table->text('deskripsi')->nullable();
-            $table->enum('kategori', ['pemrograman', 'matematika', 'database', 'jaringan']);
-            $table->integer('jumlah_modul')->default(1);
-            $table->integer('durasi_jam')->default(1);
-            $table->integer('progress')->default(0);
-            $table->enum('status', ['new', 'progress', 'completed'])->default('new');
-            $table->string('icon')->default('fa-book');
-            $table->enum('warna', ['blue', 'orange', 'green'])->default('blue');
-            $table->string('file')->nullable();
-            $table->timestamps();
-
-            $table->foreign('dosen_id')->references('id')->on('dosens')->onDelete('cascade');
+        Schema::table('materis', function (Blueprint $table) {
+            // Add mata_kuliah_id
+            $table->foreignId('mata_kuliah_id')
+                  ->after('dosen_id')
+                  ->nullable()
+                  ->constrained('mata_kuliahs')
+                  ->onDelete('cascade');
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        Schema::dropIfExists('materis');
+        Schema::table('materis', function (Blueprint $table) {
+            $table->dropForeign(['mata_kuliah_id']);
+            $table->dropColumn('mata_kuliah_id');
+        });
     }
 };

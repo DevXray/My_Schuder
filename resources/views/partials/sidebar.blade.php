@@ -1,3 +1,4 @@
+{{-- resources/views/partials/sidebar.blade.php (UPDATED) --}}
 <aside class="sidebar" id="sidebar">
     <nav class="sidebar-nav">
         <a href="/dashboard" class="nav-item {{ request()->is('dashboard') ? 'active' : '' }}">
@@ -6,11 +7,32 @@
             <div class="nav-indicator"></div>
         </a>
         
+        {{-- ✅ ADMIN ONLY: Administrator Menu --}}
+        @if(Auth::check() && Auth::user()->isAdmin())
+        <a href="/administrator" class="nav-item {{ request()->is('administrator*') ? 'active' : '' }}">
+            <i class="fas fa-user-shield"></i>
+            <span>Administrator</span>
+            <div class="nav-indicator"></div>
+        </a>
+        @endif
+        
+        {{-- ✅ MAHASISWA: Materi Menu --}}
+        @if(Auth::check() && Auth::user()->isMahasiswa() && Auth::user()->isAdmin())
         <a href="/materi" class="nav-item {{ request()->is('materi') ? 'active' : '' }}">
             <i class="fas fa-book"></i>
             <span>Materi Kelas</span>
             <div class="nav-indicator"></div>
         </a>
+        @endif
+        
+        {{-- ✅ DOSEN: Upload Materi --}}
+        @if(Auth::check() && Auth::user()->isDosen() && Auth::user()->isAdmin())
+        <a href="/materi" class="nav-item {{ request()->is('materi') ? 'active' : '' }}">
+            <i class="fas fa-book"></i>
+            <span>Kelola Materi</span>
+            <div class="nav-indicator"></div>
+        </a>
+        @endif
         
         <a href="/peserta" class="nav-item {{ request()->is('peserta') ? 'active' : '' }}">
             <i class="fas fa-users"></i>
@@ -22,7 +44,6 @@
         <a href="/tugas" class="nav-item {{ request()->is('tugas') ? 'active' : '' }}">
             <i class="fas fa-file-alt"></i>
             <span>Tugas</span>
-            
         </a>
         
         <a href="/jadwal" class="nav-item {{ request()->is('jadwal') ? 'active' : '' }}">

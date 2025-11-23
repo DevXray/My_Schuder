@@ -171,6 +171,29 @@ export class SidebarManager {
   }
 }
 
+// ========== LOADING SCREEN MANAGER ==========
+export class LoadingScreenManager {
+  constructor(elementId = 'loading-screen') {
+    this.element = document.getElementById(elementId);
+  }
+
+  show() {
+    if (this.element) {
+      this.element.style.display = 'flex';
+      this.element.style.opacity = '1';
+    }
+  }
+
+  hide() {
+    if (this.element) {
+      this.element.style.opacity = '0';
+      setTimeout(() => {
+        this.element.style.display = 'none';
+      }, 500);
+    }
+  }
+}
+
 // ========== SEARCH MANAGER ==========
 export class SearchManager {
   constructor(inputId, clearBtnId, filterCallback = null) {

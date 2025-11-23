@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ChatbotController;
+use App\Http\Controllers\AdministratorController;
 use App\Http\Controllers\SPAController;
 use App\Http\Controllers\MahasiswaController;
 use App\Http\Controllers\DosenController;
@@ -38,9 +39,40 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::delete('/', [ProfileController::class, 'destroy'])->name('destroy');
     });
     
-    // Mahasiswa & Dosen Management
-    Route::resource('mahasiswa', MahasiswaController::class);
-    Route::resource('dosen', DosenController::class);
+    // ✅ ADMINISTRATOR ROUTES (Only Admin)
+    Route::prefix('administrator')->name('administrator.')->middleware('role:admin')->group(function () {
+        Route::get('/', [AdministratorController::class, 'index'])->name('index');
+        
+        // Mahasiswa Management
+        Route::prefix('mahasiswa')->name('mahasiswa.')->group(function () {
+            Route::get('/', [AdministratorController::class, 'mahasiswaIndex'])->name('index');
+            Route::get('/create', [AdministratorController::class, 'mahasiswaCreate'])->name('create');
+            Route::post('/', [AdministratorController::class, 'mahasiswaStore'])->name('store');
+            Route::get('/{id}/edit', [AdministratorController::class, 'mahasiswaEdit'])->name('edit');
+            Route::put('/{id}', [AdministratorController::class, 'mahasiswaUpdate'])->name('update');
+            Route::delete('/{id}', [AdministratorController::class, 'mahasiswaDestroy'])->name('destroy');
+        });
+        
+        // Dosen Management
+        Route::prefix('dosen')->name('dosen.')->group(function () {
+            Route::get('/', [AdministratorController::class, 'dosenIndex'])->name('index');
+            Route::get('/create', [AdministratorController::class, 'dosenCreate'])->name('create');
+            Route::post('/', [AdministratorController::class, 'dosenStore'])->name('store');
+            Route::get('/{id}/edit', [AdministratorController::class, 'dosenEdit'])->name('edit');
+            Route::put('/{id}', [AdministratorController::class, 'dosenUpdate'])->name('update');
+            Route::delete('/{id}', [AdministratorController::class, 'dosenDestroy'])->name('destroy');
+        });
+        
+        // Mata Kuliah Management
+        Route::prefix('matakuliah')->name('matakuliah.')->group(function () {
+            Route::get('/', [AdministratorController::class, 'mataKuliahIndex'])->name('index');
+            Route::get('/create', [AdministratorController::class, 'mataKuliahCreate'])->name('create');
+            Route::post('/', [AdministratorController::class, 'mataKuliahStore'])->name('store');
+            Route::get('/{id}/edit', [AdministratorController::class, 'mataKuliahEdit'])->name('edit');
+            Route::put('/{id}', [AdministratorController::class, 'mataKuliahUpdate'])->name('update');
+            Route::delete('/{id}', [AdministratorController::class, 'mataKuliahDestroy'])->name('destroy');
+        });
+    });
     
     // Jadwal (Schedule) Management
     Route::controller(JadwalController::class)->prefix('jadwal')->name('jadwal.')->group(function () {

@@ -13,6 +13,7 @@ class Materi extends Model
 
     protected $fillable = [
         'dosen_id',
+        'mata_kuliah_id',
         'judul',
         'deskripsi',
         'kategori',
@@ -24,6 +25,12 @@ class Materi extends Model
         'warna',
         'file'
     ];
+
+// ✅ Add MataKuliah relationship
+    public function mataKuliah()
+    {
+        return $this->belongsTo(MataKuliah::class);
+    }
 
     // Relasi ke Dosen
     public function dosen()
