@@ -22,24 +22,63 @@ class PageLoader {
       console.log('🔄 Fetching page:', path);
       
       const response = await fetch(path, {
-        // Ensure cookies (session) are sent for same-origin requests so Laravel recognizes authenticated user
         credentials: 'same-origin',
         redirect: 'manual',
         headers: {
           'X-Requested-With': 'XMLHttpRequest',
-          'Accept': 'text/html',
+          'Accept': 'text/html, application/json',
           'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
         }
       });
 
-      // If server returned a redirect to login (401/302), surface a clearer error
+      console.log('📡 Response status:', response.status);
+
+      // ✅ HANDLE AUTH REDIRECT
       if (response.status === 401 || response.status === 302) {
-        throw new Error('AUTH_REDIRECT');
+        console.warn('🔒 Auth required, redirecting to login...');
+        window.location.href = '/login';
+        return;
       }
 
-      // If forbidden, surface explicit error so router can handle redirect
+      // ✅ HANDLE FORBIDDEN (403)
       if (response.status === 403) {
-        throw new Error('HTTP 403');
+        console.error('🚫 Access forbidden (403)');
+        
+        // Try to parse JSON error response
+        try {
+          const errorData = await response.json();
+          console.error('Forbidden reason:', errorData);
+          
+          if (errorData.redirect) {
+            window.location.href = errorData.redirect;
+          } else {
+            window.location.href = '/dashboard';
+          }
+        } catch (e) {
+          window.location.href = '/dashboard';
+        }
+        return;
+      }
+
+      // ✅ HANDLE SERVER ERROR (500)
+      if (response.status === 500) {
+        console.error('💥 Server error (500)');
+        
+        // Check if it's JSON response (from middleware)
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          const errorData = await response.json();
+          console.error('Server error details:', errorData);
+          
+          alert('Server Error: ' + (errorData.message || 'Unknown error'));
+          
+          if (errorData.redirect) {
+            window.location.href = errorData.redirect;
+          }
+          return;
+        }
+        
+        throw new Error(`HTTP ${response.status}`);
       }
 
       if (!response.ok) {
@@ -48,11 +87,10 @@ class PageLoader {
 
       const html = await response.text();
       
-      // Parse FULL HTML
+      // Parse HTML
       const parser = new DOMParser();
       const doc = parser.parseFromString(html, 'text/html');
       
-      // ✅ UPDATED: Extract content dengan multiple fallbacks
       const mainContent = 
         doc.querySelector('.main-content')?.innerHTML ||
         doc.querySelector('.pdf-viewer-container')?.innerHTML ||
@@ -63,12 +101,7 @@ class PageLoader {
       const headerContent = doc.querySelector('.header')?.innerHTML;
       
       if (!mainContent) {
-        console.error('Available selectors:', {
-          mainContent: !!doc.querySelector('.main-content'),
-          pdfViewer: !!doc.querySelector('.pdf-viewer-container'),
-          mainId: !!doc.querySelector('#mainContent'),
-          main: !!doc.querySelector('main')
-        });
+        console.error('❌ Main content not found in response');
         throw new Error('Main content not found in response');
       }
 
@@ -77,7 +110,6 @@ class PageLoader {
         sidebarContent,
         headerContent,
         title: doc.querySelector('title')?.textContent || 'My Schuder',
-        // ✅ Extract data attributes dari body untuk passing ke module
         bodyAttributes: {
           materiId: doc.body.getAttribute('data-materi-id'),
           tugasId: doc.body.getAttribute('data-tugas-id'),
@@ -89,21 +121,9 @@ class PageLoader {
       setTimeout(() => this.cache.delete(path), 5 * 60 * 1000);
 
       return pageData;
+      
     } catch (error) {
       console.error('💥 Page load error:', error);
-      // If auth redirect flagged by server-side, do a full navigation to let backend handle auth
-      if (error?.message === 'AUTH_REDIRECT') {
-        console.warn('🔒 Server requested auth redirect. Navigating to login...');
-        window.location.href = '/login';
-        return;
-      }
-      // Map explicit forbidden status to redirect to login as well
-      if (error?.message === 'HTTP 403' || error?.message?.includes('403')) {
-        console.warn('🔒 Access forbidden. Redirecting to dashboard/login');
-        // Redirect to dashboard or login - prefer login to re-authenticate
-        window.location.href = '/login';
-        return;
-      }
       throw error;
     }
   }

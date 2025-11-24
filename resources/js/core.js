@@ -435,33 +435,33 @@ export class AnimationManager {
   }
 
   static initStatsAnimation() {
-    const observerOptions = {
-      threshold: 0.1,
-      rootMargin: "0px 0px -50px 0px",
-    };
+    // const observerOptions = {
+    //   threshold: 0.1,
+    //   rootMargin: "0px 0px -50px 0px",
+    // };
 
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          if (entry.target.classList.contains("stat-number")) {
-            const target = parseInt(entry.target.getAttribute("data-target"));
-            AnimationManager.animateValue(entry.target, 0, target, AppConfig.ANIMATION_DURATION);
-            observer.unobserve(entry.target);
-          }
+    // const observer = new IntersectionObserver((entries) => {
+    //   entries.forEach((entry) => {
+    //     if (entry.isIntersecting) {
+    //       if (entry.target.classList.contains("stat-number")) {
+    //         const target = parseInt(entry.target.getAttribute("data-target"));
+    //         AnimationManager.animateValue(entry.target, 0, target, AppConfig.ANIMATION_DURATION);
+    //         observer.unobserve(entry.target);
+    //       }
 
-          if (entry.target.classList.contains("progress-fill")) {
-            const progress = entry.target.getAttribute("data-progress");
-            setTimeout(() => {
-              entry.target.style.width = progress + "%";
-            }, 200);
-            observer.unobserve(entry.target);
-          }
-        }
-      });
-    }, observerOptions);
+    //       if (entry.target.classList.contains("progress-fill")) {
+    //         const progress = entry.target.getAttribute("data-progress");
+    //         setTimeout(() => {
+    //           entry.target.style.width = progress + "%";
+    //         }, 200);
+    //         observer.unobserve(entry.target);
+    //       }
+    //     }
+    //   });
+    // }, observerOptions);
 
-    document.querySelectorAll(".stat-number").forEach(stat => observer.observe(stat));
-    document.querySelectorAll(".progress-fill").forEach(progress => observer.observe(progress));
+    // document.querySelectorAll(".stat-number").forEach(stat => observer.observe(stat));
+    // document.querySelectorAll(".progress-fill").forEach(progress => observer.observe(progress));
   }
 }
 

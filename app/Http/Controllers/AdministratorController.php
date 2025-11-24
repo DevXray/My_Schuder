@@ -184,7 +184,7 @@ class AdministratorController extends Controller
     // ===== MAHASISWA CRUD (Legacy - Optional) =====
     public function mahasiswaIndex()
     {
-        $mahasiswas = User::where('role', 'mahasiswa')->latest()->paginate(15);
+        $mahasiswas = User::where('role_id', 'mahasiswa')->latest()->paginate(15);
         return view('administrator.mahasiswa.index', compact('mahasiswas'));
     }
 
@@ -247,7 +247,7 @@ class AdministratorController extends Controller
     // ===== DOSEN CRUD (Legacy - Optional) =====
     public function dosenIndex()
     {
-        $dosens = User::where('role', 'dosen')->latest()->paginate(15);
+        $dosens = User::where('role_id', 'dosen')->latest()->paginate(15);
         return view('administrator.dosen.index', compact('dosens'));
     }
 

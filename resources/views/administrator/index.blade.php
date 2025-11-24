@@ -11,6 +11,19 @@
     @vite(['resources/js/app.js'])
 </head>
 <body>
+    <style>
+        .role-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .role-admin { background: #fee2e2; color: #991b1b; }
+        .role-dosen { background: #dbeafe; color: #1e40af; }
+        .role-mahasiswa { background: #d1fae5; color: #065f46; }
+    
+    </style>
     @include('partials.header')
     @include('partials.sidebar')
 
@@ -169,11 +182,8 @@
                             <td style="padding: 0.75rem; font-weight: 600;">{{ $user->name }}</td>
                             <td style="padding: 0.75rem; font-size: 0.875rem; color: #6b7280;">{{ $user->email }}</td>
                             <td style="padding: 0.75rem;">
-                                <span style="padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase;
-                                    {{ $user->role === 'admin' ? 'background: #fee2e2; color: #991b1b;' : '' }}
-                                    {{ $user->role === 'dosen' ? 'background: #dbeafe; color: #1e40af;' : '' }}
-                                    {{ $user->role === 'mahasiswa' ? 'background: #d1fae5; color: #065f46;' : '' }}">
-                                    {{ $user->role }}
+                                <span class="role-badge role-{{ $user->getRoleName() }}">
+                                        {{ $user->getRoleDisplayName() }}
                                 </span>
                             </td>
                             <td style="padding: 0.75rem; font-size: 0.875rem; color: #6b7280;">

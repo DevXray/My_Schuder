@@ -1,5 +1,4 @@
 <?php
-// app/Models/User.php
 
 namespace App\Models;
 
@@ -15,7 +14,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'role_id',  // ✅ Add role_id instead of role
+        'role_id',
         'email_verified_at',
     ];
 
@@ -32,13 +31,13 @@ class User extends Authenticatable
         ];
     }
 
-    // app/Models/User.php
-
+    // ✅ Relationship dengan Role
     public function role()
     {
-        return $this->belongsTo(Role::class, 'role_id'); // pastikan foreign key benar
+        return $this->belongsTo(Role::class, 'role_id');
     }
 
+    // ✅ Get role name safely
     public function getRoleName(): string
     {
         return $this->role?->name ?? 'guest';
@@ -49,7 +48,7 @@ class User extends Authenticatable
         return $this->role?->display_name ?? 'Guest';
     }
 
-    // ✅ Role Check Methods - FIXED with proper relationship checking
+    // ✅ Role check methods
     public function isAdmin(): bool
     {
         return $this->getRoleName() === 'admin';
@@ -63,6 +62,14 @@ class User extends Authenticatable
     public function isMahasiswa(): bool
     {
         return $this->getRoleName() === 'mahasiswa';
+    }
+
+    // ✅ ✅ ✅ TAMBAHKAN INI - Scope untuk filter by role
+    public function scopeByRole($query, $roleName)
+    {
+        return $query->whereHas('role', function($q) use ($roleName) {
+            $q->where('name', $roleName);
+        });
     }
 
     // ✅ Relationships

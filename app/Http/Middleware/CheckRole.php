@@ -1,56 +1,106 @@
 <?php
-// app/Http/Middleware/CheckRole.php
 
 namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Illuminate\Support\Facades\Log;
 
 class CheckRole
 {
-    /**
-     * Handle an incoming request.
-     */
     public function handle(Request $request, Closure $next, ...$roles): Response
     {
-        // Check if user is authenticated
+        // ✅ Check if user is authenticated
         if (!auth()->check()) {
+            Log::warning('CheckRole: User not authenticated');
+            
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthenticated',
+                    'redirect' => route('login')
+                ], 401);
+            }
+            
             return redirect()->route('login');
         }
 
         $user = auth()->user();
 
-        // Use relationship-aware role name getter (works with role_id foreign key)
-        $userRole = method_exists($user, 'getRoleName') ? $user->getRoleName() : ($user->role ?? null);
-
-        // Debug log to help trace why access may be denied
+        // ✅ Get role name safely with error handling
         try {
-            \Log::debug('CheckRole middleware', [
-                'user_id' => $user->id ?? null,
-                'user_role_computed' => $userRole,
-                'required_roles' => $roles,
-                'request_path' => $request->path(),
+            // First check if role relationship exists
+            if (!$user->role) {
+                Log::error('CheckRole: User has no role', [
+                    'user_id' => $user->id,
+                    'role_id' => $user->role_id
+                ]);
+                
+                if ($request->ajax() || $request->wantsJson()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'User role not found. Please contact administrator.',
+                        'redirect' => route('dashboard')
+                    ], 403);
+                }
+                
+                return redirect()->route('dashboard')
+                    ->with('error', 'Role tidak ditemukan. Hubungi administrator.');
+            }
+            
+            $userRole = $user->getRoleName();
+            
+        } catch (\Exception $e) {
+            Log::error('CheckRole: Error getting role name', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage()
             ]);
-        } catch (\Throwable $e) {
-            // ignore logging errors in middleware
-        }
-
-        // Check if user has required role
-        if (!in_array($userRole, $roles)) {
-            // If AJAX request, return JSON with debug info
+            
             if ($request->ajax() || $request->wantsJson()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Unauthorized. Hanya ' . implode(' atau ', $roles) . ' yang dapat mengakses halaman ini.',
+                    'message' => 'Error checking user role',
+                    'redirect' => route('dashboard')
+                ], 500);
+            }
+            
+            return redirect()->route('dashboard')
+                ->with('error', 'Terjadi kesalahan saat memeriksa role.');
+        }
+
+        // ✅ Debug log
+        Log::debug('CheckRole middleware', [
+            'user_id' => $user->id,
+            'user_role' => $userRole,
+            'required_roles' => $roles,
+            'request_path' => $request->path(),
+            'is_ajax' => $request->ajax(),
+            'wants_json' => $request->wantsJson(),
+        ]);
+
+        // ✅ Check if user has required role
+        if (!in_array($userRole, $roles)) {
+            Log::warning('CheckRole: Access denied', [
+                'user_id' => $user->id,
+                'user_role' => $userRole,
+                'required_roles' => $roles,
+            ]);
+            
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized. Only ' . implode(' or ', $roles) . ' can access this page.',
                     'redirect' => route('dashboard'),
-                    'debug' => ['your_role' => $userRole, 'required' => $roles]
+                    'debug' => [
+                        'your_role' => $userRole,
+                        'required' => $roles
+                    ]
                 ], 403);
             }
 
-            // For web request, redirect with error
             return redirect()->route('dashboard')
-                ->with('error', 'Unauthorized. Hanya ' . implode(' atau ', $roles) . ' yang dapat mengakses halaman ini.');
+                ->with('error', 'Anda tidak memiliki akses ke halaman ini.');
         }
 
         return $next($request);

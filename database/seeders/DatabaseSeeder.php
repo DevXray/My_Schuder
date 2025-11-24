@@ -4,45 +4,52 @@ namespace Database\Seeders;
 
 use App\Models\User;
 use App\Models\Role;
-// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {
-    /**
-     * Seed the application's database.
-     */
     public function run(): void
     {
-        // ✅ FIRST: Seed roles (required for users)
+        // ✅ FIRST: Seed roles
         $this->call([
             RoleSeeder::class,
         ]);
 
-        // ✅ Get role IDs
-        $adminRole = Role::where('name', 'admin')->first();
-        $dosenRole = Role::where('name', 'dosen')->first();
-        $mahasiswaRole = Role::where('name', 'mahasiswa')->first();
+        // ✅ Refresh role cache
+        Role::all(); // Force reload
 
-        // ✅ Create test admin user
-        if ($adminRole) {
-            User::firstOrCreate(
-                ['email' => 'admin@example.com'],
-                [
-                    'name' => 'Admin User',
-                    'password' => bcrypt('password'),
-                    'role_id' => $adminRole->id,
-                    'email_verified_at' => now(),
-                ]
-            );
-        }
+        // ✅ Create admin user
+        User::firstOrCreate(
+            ['email' => 'admin@example.com'],
+            [
+                'name' => 'Admin User',
+                'password' => Hash::make('password'),
+                'role_id' => 1, // admin
+                'email_verified_at' => now(),
+            ]
+        );
 
-        // ✅ Create test user
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-            'role_id' => $mahasiswaRole?->id,
-        ]);
+        // ✅ Create test users
+        User::firstOrCreate(
+            ['email' => 'dosen@example.com'],
+            [
+                'name' => 'Test Dosen',
+                'password' => Hash::make('password'),
+                'role_id' => 2, // dosen
+                'email_verified_at' => now(),
+            ]
+        );
+
+        User::firstOrCreate(
+            ['email' => 'mahasiswa@example.com'],
+            [
+                'name' => 'Test Mahasiswa',
+                'password' => Hash::make('password'),
+                'role_id' => 3, // mahasiswa
+                'email_verified_at' => now(),
+            ]
+        );
 
         // ✅ Then seed other data
         $this->call([
