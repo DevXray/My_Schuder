@@ -27,7 +27,7 @@ class AdministratorController extends Controller
 
         $recentUsers = User::with('role')->latest()->take(10)->get();
 
-        return view('administrator.index', compact('stats', 'recentUsers'));
+        return view('dashboard.admin', compact('stats', 'recentUsers'));
     }
 
     // ===== USER MANAGEMENT (ALL USERS) =====
@@ -35,13 +35,13 @@ class AdministratorController extends Controller
     {
         $users = User::with('role')->latest()->paginate(15);
         $roles = Role::all(); // ✅ Pass roles to view
-        return view('administrator.users.index', compact('users', 'roles'));
+        return view('dashboard.users.index', compact('users', 'roles'));
     }
 
     public function userCreate()
     {
         $roles = Role::all(); // ✅ Pass roles to view
-        return view('administrator.users.create', compact('roles'));
+        return view('dashboard.users.create', compact('roles'));
     }
 
     public function userStore(Request $request)
@@ -67,7 +67,7 @@ class AdministratorController extends Controller
             'role_id' => $roleId, // ✅ Store role_id
         ]);
 
-        return redirect()->route('administrator.users.index')
+        return redirect()->route('dashboard.users.index')
             ->with('success', 'User berhasil ditambahkan');
     }
 
@@ -75,7 +75,7 @@ class AdministratorController extends Controller
     {
         $user = User::with('role')->findOrFail($id);
         $roles = Role::all(); // ✅ Pass roles to view
-        return view('administrator.users.edit', compact('user', 'roles'));
+        return view('dashboard.users.edit', compact('user', 'roles'));
     }
 
     public function userUpdate(Request $request, $id)
@@ -108,7 +108,7 @@ class AdministratorController extends Controller
 
         $user->update($updateData);
 
-        return redirect()->route('administrator.users.index')
+        return redirect()->route('dashboard.users.index')
             ->with('success', 'User berhasil diupdate');
     }
 
@@ -118,13 +118,13 @@ class AdministratorController extends Controller
         
         // Prevent deleting yourself
         if ($user->id === auth()->id()) {
-            return redirect()->route('administrator.users.index')
+            return redirect()->route('dashboard.users.index')
                 ->with('error', 'Anda tidak dapat menghapus akun sendiri!');
         }
 
         $user->delete();
 
-        return redirect()->route('administrator.users.index')
+        return redirect()->route('dashboard.users.index')
             ->with('success', 'User berhasil dihapus');
     }
 
@@ -185,64 +185,141 @@ class AdministratorController extends Controller
     public function mahasiswaIndex()
     {
         $mahasiswas = User::where('role_id', 'mahasiswa')->latest()->paginate(15);
-        return view('administrator.mahasiswa.index', compact('mahasiswas'));
+        return view('dashboard.mahasiswa.index', compact('mahasiswas'));
     }
 
     public function mahasiswaCreate()
     {
-        return view('administrator.mahasiswa.create');
+        return view('dashboard.mahasiswa.create');
     }
 
-    public function mahasiswaStore(Request $request)
-    {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
-            'password' => 'required|min:8',
+    // app/Http/Controllers/AdministratorController.php
+
+public function mahasiswaStore(Request $request)
+{
+    $validated = $request->validate([
+        'nim' => 'required|string|max:20|unique:mahasiswas,nim',
+        'nama' => 'required|string|max:255',
+        'email' => 'required|email|unique:users,email',
+        'password' => 'required|min:8',
+        'jurusan' => 'nullable|string|max:100',
+        'kelas' => 'nullable|string|max:50',
+    ]);
+
+    DB::beginTransaction();
+    
+    try {
+        // ✅ 1. Buat User dulu
+        $user = User::create([
+            'name' => $validated['nama'],
+            'email' => $validated['email'],
+            'password' => Hash::make($validated['password']),
+            'role_id' => Role::getIdByName('mahasiswa'), // Auto set role mahasiswa
         ]);
 
-        $validated['password'] = Hash::make($validated['password']);
-        $validated['role'] = 'mahasiswa';
+        // ✅ 2. Buat Mahasiswa linked ke User
+        Mahasiswa::create([
+            'user_id' => $user->id,
+            'nim' => $validated['nim'],
+            'nama' => $validated['nama'],
+            'email' => $validated['email'],
+            'password' => Hash::make($validated['password']),
+            'jurusan' => $validated['jurusan'] ?? null,
+            'kelas' => $validated['kelas'] ?? null,
+        ]);
+
+        DB::commit();
+
+        return redirect()->route('dashboard.mahasiswa.index')
+            ->with('success', 'Mahasiswa dan User berhasil ditambahkan');
+            
+    } catch (\Exception $e) {
+        DB::rollBack();
+        return back()->withErrors(['error' => 'Gagal menambahkan mahasiswa: ' . $e->getMessage()])
+            ->withInput();
+    }
+}
+
+public function mahasiswaUpdate(Request $request, $id)
+{
+    $mahasiswa = Mahasiswa::findOrFail($id);
+
+    $validated = $request->validate([
+        'nim' => 'required|string|max:20|unique:mahasiswas,nim,' . $id,
+        'nama' => 'required|string|max:255',
+        'email' => 'required|email|unique:users,email,' . $mahasiswa->user_id,
+        'password' => 'nullable|min:8',
+        'jurusan' => 'nullable|string|max:100',
+        'kelas' => 'nullable|string|max:50',
+    ]);
+
+    DB::beginTransaction();
+    
+    try {
+        // ✅ Update User
+        $user = User::findOrFail($mahasiswa->user_id);
+        $userData = [
+            'name' => $validated['nama'],
+            'email' => $validated['email'],
+        ];
         
-        User::create($validated);
-
-        return redirect()->route('administrator.mahasiswa.index')
-            ->with('success', 'Mahasiswa berhasil ditambahkan');
-    }
-
-    public function mahasiswaEdit($id)
-    {
-        $mahasiswa = User::where('role', 'mahasiswa')->findOrFail($id);
-        return view('administrator.mahasiswa.edit', compact('mahasiswa'));
-    }
-
-    public function mahasiswaUpdate(Request $request, $id)
-    {
-        $mahasiswa = User::where('role', 'mahasiswa')->findOrFail($id);
-
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email,'.$id,
-        ]);
-
         if ($request->filled('password')) {
-            $validated['password'] = Hash::make($request->password);
+            $userData['password'] = Hash::make($request->password);
         }
+        
+        $user->update($userData);
 
-        $mahasiswa->update($validated);
+        // ✅ Update Mahasiswa
+        $mahasiswaData = [
+            'nim' => $validated['nim'],
+            'nama' => $validated['nama'],
+            'email' => $validated['email'],
+            'jurusan' => $validated['jurusan'] ?? null,
+            'kelas' => $validated['kelas'] ?? null,
+        ];
+        
+        if ($request->filled('password')) {
+            $mahasiswaData['password'] = Hash::make($request->password);
+        }
+        
+        $mahasiswa->update($mahasiswaData);
 
-        return redirect()->route('administrator.mahasiswa.index')
-            ->with('success', 'Mahasiswa berhasil diupdate');
+        DB::commit();
+
+        return redirect()->route('dashboard.mahasiswa.index')
+            ->with('success', 'Mahasiswa dan User berhasil diupdate');
+            
+    } catch (\Exception $e) {
+        DB::rollBack();
+        return back()->withErrors(['error' => 'Gagal mengupdate mahasiswa: ' . $e->getMessage()])
+            ->withInput();
     }
+}
 
-    public function mahasiswaDestroy($id)
-    {
-        $mahasiswa = User::where('role', 'mahasiswa')->findOrFail($id);
+public function mahasiswaDestroy($id)
+{
+    DB::beginTransaction();
+    
+    try {
+        $mahasiswa = Mahasiswa::findOrFail($id);
+        $user = User::findOrFail($mahasiswa->user_id);
+        
+        // ✅ Hapus mahasiswa dulu (karena foreign key)
         $mahasiswa->delete();
+        
+        // ✅ Hapus user
+        $user->delete();
+        
+        DB::commit();
 
-        return redirect()->route('administrator.mahasiswa.index')
-            ->with('success', 'Mahasiswa berhasil dihapus');
+        return redirect()->route('dashboard.mahasiswa.index')
+            ->with('success', 'Mahasiswa dan User berhasil dihapus');
+            
+    } catch (\Exception $e) {
+        DB::rollBack();
+        return back()->with('error', 'Gagal menghapus mahasiswa: ' . $e->getMessage());
     }
+}
 
     // ===== DOSEN CRUD (Legacy - Optional) =====
     public function dosenIndex()

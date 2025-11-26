@@ -1,16 +1,15 @@
-{{-- resources/views/administrator/index.blade.php (ENHANCED) --}}
+{{-- resources/views/dashboard-admin.blade.php --}}
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Administrator - My Schuder</title>
+    <title>Admin Dashboard - My Schuder</title>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     @vite(['resources/js/app.js'])
-</head>
-<body>
+    
     <style>
         .role-badge {
             padding: 0.25rem 0.75rem;
@@ -22,8 +21,9 @@
         .role-admin { background: #fee2e2; color: #991b1b; }
         .role-dosen { background: #dbeafe; color: #1e40af; }
         .role-mahasiswa { background: #d1fae5; color: #065f46; }
-    
     </style>
+</head>
+<body>
     @include('partials.header')
     @include('partials.sidebar')
 
@@ -97,6 +97,28 @@
                     </span>
                 </div>
             </div>
+
+            <div class="stat-card blue">
+                <div class="stat-icon"><i class="fas fa-book"></i></div>
+                <div class="stat-content">
+                    <h3>Total Materi</h3>
+                    <p class="stat-number">{{ $stats['total_materi'] }}</p>
+                    <span class="stat-change">
+                        <i class="fas fa-book-open"></i> Materi Pembelajaran
+                    </span>
+                </div>
+            </div>
+
+            <div class="stat-card orange">
+                <div class="stat-icon"><i class="fas fa-tasks"></i></div>
+                <div class="stat-content">
+                    <h3>Total Tugas</h3>
+                    <p class="stat-number">{{ $stats['total_tugas'] }}</p>
+                    <span class="stat-change">
+                        <i class="fas fa-clipboard-check"></i> Tugas Aktif
+                    </span>
+                </div>
+            </div>
         </section>
 
         <!-- Quick Actions -->
@@ -118,7 +140,7 @@
                             <p style="margin: 0; font-size: 0.875rem; color: #6b7280;">CRUD user & ubah role</p>
                         </div>
                     </div>
-                    <a href="{{ route('administrator.users.index') }}" class="btn-action primary" style="width: 100%; text-decoration: none;">
+                    <a href="{{ route('users.index') }}" class="btn-action primary" style="width: 100%; text-decoration: none;">
                         <i class="fas fa-arrow-right"></i> Kelola User
                     </a>
                 </div>
@@ -134,24 +156,24 @@
                             <p style="margin: 0; font-size: 0.875rem; color: #6b7280;">Khusus data mahasiswa</p>
                         </div>
                     </div>
-                    <a href="{{ route('administrator.mahasiswa.index') }}" class="btn-action primary" style="width: 100%; text-decoration: none;">
+                    <a href="{{ route('mahasiswa.index') }}" class="btn-action primary" style="width: 100%; text-decoration: none;">
                         <i class="fas fa-arrow-right"></i> Kelola Mahasiswa
                     </a>
                 </div>
 
-                <!-- Kelola Dosen -->
-                <div class="info-card" style="border-left: 4px solid #f59e0b;">
+                <!-- Kelola Materi -->
+                <div class="info-card" style="border-left: 4px solid #3b82f6;">
                     <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
-                        <div style="width: 50px; height: 50px; background: #fef3c7; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
-                            <i class="fas fa-chalkboard-teacher" style="font-size: 1.5rem; color: #f59e0b;"></i>
+                        <div style="width: 50px; height: 50px; background: #dbeafe; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-book" style="font-size: 1.5rem; color: #3b82f6;"></i>
                         </div>
                         <div>
-                            <h3 style="margin: 0; font-size: 1.1rem;">Kelola Dosen</h3>
-                            <p style="margin: 0; font-size: 0.875rem; color: #6b7280;">Khusus data dosen</p>
+                            <h3 style="margin: 0; font-size: 1.1rem;">Kelola Materi</h3>
+                            <p style="margin: 0; font-size: 0.875rem; color: #6b7280;">Manajemen materi pembelajaran</p>
                         </div>
                     </div>
-                    <a href="{{ route('administrator.dosen.index') }}" class="btn-action primary" style="width: 100%; text-decoration: none; background: linear-gradient(135deg, #f59e0b, #d97706);">
-                        <i class="fas fa-arrow-right"></i> Kelola Dosen
+                    <a href="{{ route('materi.index') }}" class="btn-action primary" style="width: 100%; text-decoration: none;">
+                        <i class="fas fa-arrow-right"></i> Kelola Materi
                     </a>
                 </div>
 
@@ -162,7 +184,7 @@
         <section class="card">
             <div class="card-header">
                 <h3><i class="fas fa-clock"></i> User Terbaru</h3>
-                <a href="{{ route('administrator.users.index') }}" class="view-all-btn">
+                <a href="{{ route('users.index') }}" class="view-all-btn">
                     Lihat Semua <i class="fas fa-arrow-right"></i>
                 </a>
             </div>
@@ -183,7 +205,7 @@
                             <td style="padding: 0.75rem; font-size: 0.875rem; color: #6b7280;">{{ $user->email }}</td>
                             <td style="padding: 0.75rem;">
                                 <span class="role-badge role-{{ $user->getRoleName() }}">
-                                        {{ $user->getRoleDisplayName() }}
+                                    {{ $user->getRoleDisplayName() }}
                                 </span>
                             </td>
                             <td style="padding: 0.75rem; font-size: 0.875rem; color: #6b7280;">

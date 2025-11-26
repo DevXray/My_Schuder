@@ -26,7 +26,7 @@
 
         <section class="card" style="max-width: 800px; margin: 0 auto;">
             <div class="card-body">
-                <form action="{{ route('administrator.mahasiswa.store') }}" method="POST">
+                <form action="{{ route('mahasiswa.store') }}" method="POST">
                     @csrf
 
                     <div class="form-group" style="margin-bottom: 1.5rem;">
@@ -105,7 +105,7 @@
                         <button type="submit" class="btn-action primary" style="flex: 1;">
                             <i class="fas fa-save"></i> Simpan
                         </button>
-                        <a href="{{ route('administrator.mahasiswa.index') }}" class="btn-action secondary" style="flex: 1; text-decoration: none; text-align: center;">
+                        <a href="{{ route('mahasiswa.index') }}" class="btn-action secondary" style="flex: 1; text-decoration: none; text-align: center;">
                             <i class="fas fa-times"></i> Batal
                         </a>
                     </div>

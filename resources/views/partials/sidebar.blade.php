@@ -1,21 +1,13 @@
 {{-- resources/views/partials/sidebar.blade.php (FIXED with Role Relationship) --}}
 <aside class="sidebar" id="sidebar">
     <nav class="sidebar-nav">
-        {{-- Dashboard - Untuk Semua Role --}}
-        <a href="/dashboard" class="nav-item {{ request()->is('dashboard') ? 'active' : '' }}">
+        {{-- Dashboard - Untuk Role Admin --}}
+        
+        <a href="/dashboard" class="nav-item {{ request()->is('dashboard') && !request()->is('administrator*') ? 'active' : '' }}">
             <i class="fas fa-home"></i>
             <span>Dashboard</span>
             <div class="nav-indicator"></div>
         </a>
-        
-        {{-- ✅ ADMIN ONLY: Administrator Menu --}}
-        @if(Auth::check() && Auth::user()->getRoleName() === 'admin')
-        <a href="/administrator" class="nav-item {{ request()->is('administrator*') ? 'active' : '' }}">
-            <i class="fas fa-user-shield"></i>
-            <span>Administrator</span>
-            <div class="nav-indicator"></div>
-        </a>
-        @endif
         
         {{-- ✅ MATERI - Untuk Admin & Mahasiswa (bukan Dosen sendirian) --}}
         @if(Auth::check() && in_array(Auth::user()->getRoleName(), ['admin', 'mahasiswa']))

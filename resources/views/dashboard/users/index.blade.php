@@ -86,7 +86,7 @@
                     <h1><i class="fas fa-users-cog"></i> Kelola Semua User</h1>
                     <p>Manajemen user, role, dan akses sistem</p>
                 </div>
-                <a href="{{ route('administrator.users.create') }}" class="btn-primary">
+                <a href="{{ route('users.create') }}" class="btn-primary">
                     <i class="fas fa-plus"></i> Tambah User Baru
                 </a>
             </div>
@@ -207,7 +207,7 @@
                                         @endif
                                         
                                         {{-- Edit Button --}}
-                                        <a href="{{ route('administrator.users.edit', $user->id) }}" 
+                                        <a href="{{ route('users.edit', $user->id) }}" 
                                            style="padding: 0.5rem 1rem; background: #3b82f6; color: white; border-radius: 8px; text-decoration: none; font-size: 0.875rem;">
                                             <i class="fas fa-edit"></i>
                                         </a>
@@ -221,7 +221,7 @@
                                         @endif
                                     </div>
                                     
-                                    <form id="delete-form-{{ $user->id }}" action="{{ route('administrator.users.destroy', $user->id) }}" method="POST" style="display: none;">
+                                    <form id="delete-form-{{ $user->id }}" action="{{ route('users.destroy', $user->id) }}" method="POST" style="display: none;">
                                         @csrf
                                         @method('DELETE')
                                     </form>
@@ -283,16 +283,15 @@
                 cancelButtonText: 'Batal'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    // ✅ FIXED: Added debugging
                     console.log('Changing role for user:', userId, 'to:', newRole);
                     
-                    fetch(`/administrator/users/${userId}/change-role`, {
+                    fetch(`/users/${userId}/change-role`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
                             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
                         },
-                        body: JSON.stringify({ role_name: newRole }) // ✅ Changed to role_name
+                        body: JSON.stringify({ role_name: newRole })
                     })
                     .then(response => {
                         console.log('Response status:', response.status);
@@ -378,7 +377,7 @@
                 if (result.isConfirmed && result.value) {
                     const form = document.createElement('form');
                     form.method = 'POST';
-                    form.action = '{{ route("administrator.users.bulk-change-role") }}';
+                    form.action = '{{ route("users.bulk-change-role") }}';
                     form.innerHTML = `
                         @csrf
                         <input type="hidden" name="role" value="${result.value}">
@@ -406,7 +405,7 @@
                 if (result.isConfirmed) {
                     const form = document.createElement('form');
                     form.method = 'POST';
-                    form.action = '{{ route("administrator.users.bulk-delete") }}';
+                    form.action = '{{ route("users.bulk-delete") }}';
                     form.innerHTML = `
                         @csrf
                         ${selected.map(id => `<input type="hidden" name="user_ids[]" value="${id}">`).join('')}
@@ -419,19 +418,3 @@
     </script>
 </body>
 </html>
-                            Gunakan fitur ini untuk mengatur role user dengan cepat.</small>
-                    </div>
-
-                    <div style="text-align: right;">
-                        <button type="submit" class="btn-primary" style="padding: 0.75rem 1.5rem; font-size: 1rem;">
-                            <i class="fas fa-save"></i> Simpan User
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </section>
-    </main>
-
-    @include('partials.chatbot')
-    <div class="overlay" id="overlay"></div>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>

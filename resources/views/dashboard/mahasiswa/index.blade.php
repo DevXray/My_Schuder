@@ -22,7 +22,7 @@
                     <h1><i class="fas fa-user-graduate"></i> Kelola Mahasiswa</h1>
                     <p>Daftar semua mahasiswa yang terdaftar</p>
                 </div>
-                <a href="{{ route('administrator.mahasiswa.create') }}" class="btn-primary">
+                <a href="{{ route('mahasiswa.create') }}" class="btn-primary">
                     <i class="fas fa-plus"></i> Tambah Mahasiswa
                 </a>
             </div>
@@ -59,7 +59,7 @@
                                 <td style="padding: 1rem;">{{ $mhs->kelas ?? '-' }}</td>
                                 <td style="padding: 1rem; text-align: center;">
                                     <div style="display: flex; gap: 0.5rem; justify-content: center;">
-                                        <a href="{{ route('administrator.mahasiswa.edit', $mhs->id) }}" 
+                                        <a href="{{ route('dashboard.mahasiswa.edit', $mhs->id) }}" 
                                            style="padding: 0.5rem 1rem; background: #3b82f6; color: white; border-radius: 8px; text-decoration: none; font-size: 0.875rem;">
                                             <i class="fas fa-edit"></i> Edit
                                         </a>

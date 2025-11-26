@@ -1,3 +1,4 @@
+// app/Models/User.php
 <?php
 
 namespace App\Models;
@@ -48,7 +49,7 @@ class User extends Authenticatable
         return $this->role?->display_name ?? 'Guest';
     }
 
-    // ✅ Role check methods
+    // ✅ Role check methods - PASTIKAN INI ADA
     public function isAdmin(): bool
     {
         return $this->getRoleName() === 'admin';
@@ -64,7 +65,7 @@ class User extends Authenticatable
         return $this->getRoleName() === 'mahasiswa';
     }
 
-    // ✅ ✅ ✅ TAMBAHKAN INI - Scope untuk filter by role
+    // ✅ Scope untuk filter by role
     public function scopeByRole($query, $roleName)
     {
         return $query->whereHas('role', function($q) use ($roleName) {

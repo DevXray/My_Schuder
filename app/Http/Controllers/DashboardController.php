@@ -6,34 +6,70 @@ use Illuminate\Http\Request;
 use App\Models\Tugas;
 use App\Models\Materi;
 use App\Models\Jadwal;
+use App\Models\User;
 use Carbon\Carbon;
 
 class DashboardController extends Controller
 {
     public function index()
     {
+        $user = auth()->user();
+        
+        // ✅ DEBUG: Log user info
+        \Log::info('Dashboard Access', [
+            'user_id' => $user->id,
+            'user_name' => $user->name,
+            'role_id' => $user->role_id,
+            'role_name' => $user->getRoleName(),
+            'is_admin' => $user->isAdmin()
+        ]);
+        
+        // ✅ Cek apakah user adalah admin
+        if ($user->isAdmin()) {
+            \Log::info('Loading Admin Dashboard');
+            return $this->adminDashboard();
+        }
+        
+        \Log::info('Loading Student Dashboard');
+        return $this->studentDashboard();
+    }
+    
+    /**
+     * Admin Dashboard - Menggantikan Administrator Page
+     */
+    private function adminDashboard()
+    {
+        $stats = [
+            'total_users' => User::count(),
+            'total_admin' => User::byRole('admin')->count(),
+            'total_dosen' => User::byRole('dosen')->count(),
+            'total_mahasiswa' => User::byRole('mahasiswa')->count(),
+            'total_materi' => Materi::count(),
+            'total_tugas' => Tugas::count(),
+        ];
+
+        $recentUsers = User::with('role')->latest()->take(10)->get();
+        $recentMateri = Materi::with('dosen')->latest()->take(5)->get();
+        $recentTugas = Tugas::latest()->take(5)->get();
+
+        return view('dashboard.admin', compact('stats', 'recentUsers', 'recentMateri', 'recentTugas'));
+    }
+    
+    /**
+     * Student/Dosen Dashboard
+     */
+    private function studentDashboard()
+    {
         // ===== STATISTIK CARDS =====
-        
-        // Total Materi
         $totalMateri = Materi::count();
-        
-        // Tugas Aktif (belum dikumpulkan)
         $tugasAktif = Tugas::where('status', 'pending')->count();
-        
-        // Peserta Kelas (hardcoded dulu, nanti bisa diganti jika ada model Mahasiswa)
-        $pesertaKelas = 32; // Atau bisa dari User::where('role', 'mahasiswa')->count();
-        
-        // Jadwal Hari Ini
+        $pesertaKelas = 32;
         $hariIni = Carbon::now()->locale('id')->dayName;
         $jadwalHariIni = Jadwal::where('hari', ucfirst($hariIni))->count();
         
-        
         // ===== INFORMASI TERBARU =====
-        
-        // Ambil 4 update terbaru dari berbagai sumber
         $informasiTerbaru = collect();
         
-        // Tugas terbaru (2 hari terakhir)
         $tugasBaru = Tugas::with('materi')
             ->where('tanggal_diberikan', '>=', Carbon::now()->subDays(2))
             ->latest('tanggal_diberikan')
@@ -50,7 +86,6 @@ class DashboardController extends Controller
                 ];
             });
         
-        // Materi terbaru (3 hari terakhir)
         $materiBaru = Materi::with('dosen')
             ->where('created_at', '>=', Carbon::now()->subDays(3))
             ->latest()
@@ -67,24 +102,16 @@ class DashboardController extends Controller
                 ];
             });
         
-        // Gabungkan semua informasi dan urutkan berdasarkan waktu
         $informasiTerbaru = $tugasBaru->merge($materiBaru)
             ->sortByDesc('created_at')
             ->take(4)
             ->values();
-        
-        
-        // ===== JADWAL HARI INI =====
         
         $jadwalList = Jadwal::where('hari', ucfirst($hariIni))
             ->orderBy('jam_mulai')
             ->take(3)
             ->get();
         
-        
-        // ===== PROGRESS PEMBELAJARAN =====
-        
-        // Ambil semua materi dengan progress
         $progressMateri = Materi::with('dosen')
             ->select('judul', 'jumlah_modul', 'progress')
             ->orderByDesc('progress')
@@ -99,41 +126,20 @@ class DashboardController extends Controller
                 ];
             });
         
-        
-        // ===== STATISTIK TAMBAHAN =====
-        
-        // Deadline dekat (3 hari ke depan)
         $deadlineDekat = Tugas::deadlineDekat()->count();
-        
-        // Tugas sudah dikumpulkan
         $tugasDikumpulkan = Tugas::where('status', 'submitted')->count();
-        
-        // Rata-rata nilai
         $rataRataNilai = Tugas::where('status', 'graded')->avg('nilai');
-        
-        // Materi completed
         $materiSelesai = Materi::where('status', 'completed')->count();
         
-        
-        // Return data ke view
         return view('dashboard', compact(
-            // Stats Cards
             'totalMateri',
             'tugasAktif',
             'pesertaKelas',
             'jadwalHariIni',
-            
-            // Informasi Terbaru
             'informasiTerbaru',
-            
-            // Jadwal
             'jadwalList',
             'hariIni',
-            
-            // Progress
             'progressMateri',
-            
-            // Stats Tambahan
             'deadlineDekat',
             'tugasDikumpulkan',
             'rataRataNilai',

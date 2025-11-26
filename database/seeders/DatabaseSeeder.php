@@ -1,3 +1,4 @@
+// database/seeders/DatabaseSeeder.php
 <?php
 
 namespace Database\Seeders;
@@ -17,45 +18,57 @@ class DatabaseSeeder extends Seeder
         ]);
 
         // ✅ Refresh role cache
-        Role::all(); // Force reload
+        $adminRole = Role::where('name', 'admin')->first();
+        $dosenRole = Role::where('name', 'dosen')->first();
+        $mahasiswaRole = Role::where('name', 'mahasiswa')->first();
 
-        // ✅ Create admin user
-        User::firstOrCreate(
+        // ✅ Create admin user dengan ROLE_ID yang benar
+        $admin = User::firstOrCreate(
             ['email' => 'admin@example.com'],
             [
                 'name' => 'Admin User',
                 'password' => Hash::make('password'),
-                'role_id' => 1, // admin
                 'email_verified_at' => now(),
             ]
         );
+        
+        // ✅ PASTIKAN role_id admin = 1
+        $admin->role_id = $adminRole->id;
+        $admin->save();
 
         // ✅ Create test users
-        User::firstOrCreate(
+        $dosen = User::firstOrCreate(
             ['email' => 'dosen@example.com'],
             [
                 'name' => 'Test Dosen',
                 'password' => Hash::make('password'),
-                'role_id' => 2, // dosen
                 'email_verified_at' => now(),
             ]
         );
+        $dosen->role_id = $dosenRole->id;
+        $dosen->save();
 
-        User::firstOrCreate(
+        $mahasiswa = User::firstOrCreate(
             ['email' => 'mahasiswa@example.com'],
             [
                 'name' => 'Test Mahasiswa',
                 'password' => Hash::make('password'),
-                'role_id' => 3, // mahasiswa
                 'email_verified_at' => now(),
             ]
         );
+        $mahasiswa->role_id = $mahasiswaRole->id;
+        $mahasiswa->save();
 
-        // ✅ Then seed other data
+        // Then seed other data
         $this->call([
             DosenSeeder::class,
             MateriSeeder::class,
             TugasSeeder::class,
         ]);
+        
+        // ✅ Log hasil
+        $this->command->info('✅ Admin user role: ' . $admin->getRoleName());
+        $this->command->info('✅ Dosen user role: ' . $dosen->getRoleName());
+        $this->command->info('✅ Mahasiswa user role: ' . $mahasiswa->getRoleName());
     }
 }

@@ -39,10 +39,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::delete('/', [ProfileController::class, 'destroy'])->name('destroy');
     });
     
-    // ✅ ADMINISTRATOR ROUTES (ONLY ADMIN)
-Route::middleware('role:admin')->prefix('administrator')->name('administrator.')->group(function () {
-    // Main Administrator Dashboard
-    Route::get('/', [AdministratorController::class, 'index'])->name('index');
     
     // ===== USER MANAGEMENT (ALL USERS) =====
     Route::prefix('users')->name('users.')->group(function () {
@@ -90,7 +86,7 @@ Route::middleware('role:admin')->prefix('administrator')->name('administrator.')
         Route::put('/{id}', [AdministratorController::class, 'mataKuliahUpdate'])->name('update');
         Route::delete('/{id}', [AdministratorController::class, 'mataKuliahDestroy'])->name('destroy');
     });
-});
+
     // ✅ MATERI ROUTES (Admin, Dosen, Mahasiswa - Semua bisa akses)
     // Admin & Mahasiswa: View materi
     // Dosen: Kelola materi (create, edit, delete)
