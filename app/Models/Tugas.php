@@ -38,15 +38,28 @@ class Tugas extends Model
         'tepat_waktu' => 'boolean'
     ];
 
-    // Relasi
+    // ✅ Relasi ke Dosen
     public function dosen()
     {
         return $this->belongsTo(Dosen::class);
     }
 
+    // ✅ Relasi ke Materi
     public function materi()
     {
         return $this->belongsTo(Materi::class);
+    }
+
+    // ✅ Relasi ke Pengumpulan (BARU)
+    public function pengumpulans()
+    {
+        return $this->hasMany(Pengumpulan::class, 'tugas_id');
+    }
+
+    // ✅ Get pengumpulan untuk mahasiswa tertentu
+    public function getPengumpulanForMahasiswa($mahasiswaId)
+    {
+        return $this->pengumpulans()->where('mahasiswa_id', $mahasiswaId)->first();
     }
 
     // Accessor - Hitung sisa hari deadline
@@ -106,8 +119,6 @@ class Tugas extends Model
     // Accessor - Deadline dekat (3 hari atau kurang)
     public function getIsDeadlineDekatAttribute()
     {
-        if ($this->status !== 'pending') return false;
-        
         $now = Carbon::now();
         $deadline = Carbon::parse($this->deadline);
         

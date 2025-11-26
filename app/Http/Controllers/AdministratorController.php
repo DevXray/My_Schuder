@@ -67,7 +67,7 @@ class AdministratorController extends Controller
             'role_id' => $roleId, // ✅ Store role_id
         ]);
 
-        return redirect()->route('dashboard.users.index')
+        return redirect()->route('users.index')
             ->with('success', 'User berhasil ditambahkan');
     }
 
@@ -108,7 +108,7 @@ class AdministratorController extends Controller
 
         $user->update($updateData);
 
-        return redirect()->route('dashboard.users.index')
+        return redirect()->route('users.index')
             ->with('success', 'User berhasil diupdate');
     }
 
@@ -124,7 +124,7 @@ class AdministratorController extends Controller
 
         $user->delete();
 
-        return redirect()->route('dashboard.users.index')
+        return redirect()->route('users.index')
             ->with('success', 'User berhasil dihapus');
     }
 
@@ -230,7 +230,7 @@ public function mahasiswaStore(Request $request)
 
         DB::commit();
 
-        return redirect()->route('dashboard.mahasiswa.index')
+        return redirect()->route('mahasiswa.index')
             ->with('success', 'Mahasiswa dan User berhasil ditambahkan');
             
     } catch (\Exception $e) {
@@ -325,12 +325,12 @@ public function mahasiswaDestroy($id)
     public function dosenIndex()
     {
         $dosens = User::where('role_id', 'dosen')->latest()->paginate(15);
-        return view('administrator.dosen.index', compact('dosens'));
+        return view('dashboard.dosen.index', compact('dosens'));
     }
 
     public function dosenCreate()
     {
-        return view('administrator.dosen.create');
+        return view('dashboard.dosen.create');
     }
 
     public function dosenStore(Request $request)

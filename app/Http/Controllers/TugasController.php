@@ -5,7 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\Tugas;
 use App\Models\Dosen;
 use App\Models\Materi;
+use App\Models\Mahasiswa;
+use App\Models\PengumpulanTugas;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
 
@@ -13,11 +16,20 @@ class TugasController extends Controller
 {
     public function index(Request $request)
     {
+        $userId = auth()->id();
         $query = Tugas::with(['dosen', 'materi']);
 
-        // Filter by status
+        // Filter by status (pending/submitted)
         if ($request->has('status') && $request->status != 'all') {
-            $query->byStatus($request->status);
+            if ($request->status == 'pending') {
+                $query->whereDoesntHave('pengumpulan', function($q) use ($userId) {
+                    $q->where('mahasiswa_id', $userId);
+                });
+            } elseif ($request->status == 'submitted') {
+                $query->whereHas('pengumpulan', function($q) use ($userId) {
+                    $q->where('mahasiswa_id', $userId);
+                });
+            }
         }
 
         // Filter by priority
@@ -52,7 +64,17 @@ class TugasController extends Controller
             $query->orderBy('deadline', 'asc');
         }
 
-        $tugas = $query->get();
+        $tugas = $query->get()->map(function($item) use ($userId) {
+            $pengumpulan = $item->pengumpulans()
+                ->where('mahasiswa_id', $userId)
+                ->first();
+            
+            $item->status = $pengumpulan ? 'submitted' : 'pending';
+            $item->pengumpulan_data = $pengumpulan;
+            
+            return $item;
+        });
+
         $stats = Tugas::getStats();
         $counts = Tugas::getCountByStatus();
 
@@ -80,8 +102,6 @@ class TugasController extends Controller
             'file_soal' => 'nullable|file|mimes:pdf,doc,docx,zip|max:10240'
         ]);
 
-        $validated['status'] = 'pending';
-
         if ($request->hasFile('file_soal')) {
             $validated['file_soal'] = $request->file('file_soal')->store('tugas', 'public');
         }
@@ -95,7 +115,19 @@ class TugasController extends Controller
     public function show($id)
     {
         $tugas = Tugas::with(['dosen', 'materi'])->findOrFail($id);
-        return view('tugas.show', compact('pengumpulan'));
+        
+        // ✅ Get data pengumpulan jika mahasiswa
+        $pengumpulan = null;
+        if (auth()->user()->isMahasiswa()) {
+            $mahasiswas = Mahasiswa::where('user_id', auth()->id())->first();
+            if ($mahasiswa) {
+                $pengumpulan = Pengumpulan::where('tugas_id', $id)
+                                          ->where('mahasiswa_id', $mahasiswa->id)
+                                          ->first();
+            }
+        }
+        
+        return view('tugas.show', compact('tugas', 'pengumpulan'));
     }
 
     public function edit($id)
@@ -142,9 +174,6 @@ class TugasController extends Controller
         if ($tugas->file_soal) {
             Storage::disk('public')->delete($tugas->file_soal);
         }
-        if ($tugas->file_jawaban) {
-            Storage::disk('public')->delete($tugas->file_jawaban);
-        }
 
         $tugas->delete();
 
@@ -156,48 +185,116 @@ class TugasController extends Controller
     public function submit(Request $request, $id)
     {
         $tugas = Tugas::findOrFail($id);
-
+        
+        // ✅ Validasi input
         $validated = $request->validate([
-            'file_jawaban' => 'required|file|mimes:pdf,doc,docx,zip|max:20480'
+            'file_jawaban' => 'required|file|mimes:pdf,doc,docx,zip|max:20480', // Max 20MB
+            'catatan' => 'nullable|string|max:1000'
+        ], [
+            'file_jawaban.required' => 'File jawaban harus diupload',
+            'file_jawaban.mimes' => 'Format file harus PDF, DOC, DOCX, atau ZIP',
+            'file_jawaban.max' => 'Ukuran file maksimal 20MB'
         ]);
 
-        if ($request->hasFile('file_jawaban')) {
-            if ($tugas->file_jawaban) {
-                Storage::disk('public')->delete($tugas->file_jawaban);
+        DB::beginTransaction();
+        
+        try {
+            // ✅ 1. Get mahasiswa_id dari user yang sedang login
+            $user = auth()->user();
+            
+            // Cari mahasiswa berdasarkan user_id
+            $mahasiswas = Mahasiswa::where('user_id', $user->id)->first();
+            
+            if (!$mahasiswa) {
+                return back()->withErrors(['error' => 'Data mahasiswa tidak ditemukan. Hubungi administrator.']);
             }
-            $validated['file_jawaban'] = $request->file('file_jawaban')->store('jawaban', 'public');
+
+            // ✅ 2. Cek apakah sudah pernah mengumpulkan
+            $existingPengumpulan = Pengumpulan::where('tugas_id', $tugas->id)
+                                              ->where('mahasiswa_id', $mahasiswa->id)
+                                              ->first();
+            
+            // ✅ 3. Upload file
+            $filePath = null;
+            if ($request->hasFile('file_jawaban')) {
+                // Hapus file lama jika ada
+                if ($existingPengumpulan && $existingPengumpulan->file_tugas) {
+                    Storage::disk('public')->delete($existingPengumpulan->file_tugas);
+                }
+                
+                // Upload file baru
+                $file = $request->file('file_jawaban');
+                $fileName = time() . '_' . $user->id . '_' . $file->getClientOriginalName();
+                $filePath = $file->storeAs('pengumpulan_tugas', $fileName, 'public');
+            }
+
+            // ✅ 4. Simpan/Update ke tabel pengumpulan_tugas
+            $waktuPengumpulan = Carbon::now();
+            
+            if ($existingPengumpulan) {
+                // Update pengumpulan yang sudah ada
+                $existingPengumpulan->update([
+                    'file_tugas' => $filePath,
+                    'waktu_pengumpulan' => $waktuPengumpulan,
+                ]);
+                
+                $message = 'Tugas berhasil diperbarui!';
+            } else {
+                // Buat pengumpulan baru
+                Pengumpulan::create([
+                    'tugas_id' => $tugas->id,
+                    'mahasiswa_id' => $mahasiswa->id,
+                    'file_tugas' => $filePath,
+                    'waktu_pengumpulan' => $waktuPengumpulan,
+                ]);
+                
+                $message = 'Tugas berhasil dikumpulkan!';
+            }
+
+            // ✅ 5. OPTIONAL: Update status di tabel tugas (jika masih digunakan)
+            $tugas->update([
+                'status' => 'submitted',
+                'file_jawaban' => $filePath,
+                'waktu_pengumpulan' => $waktuPengumpulan,
+                'tepat_waktu' => $waktuPengumpulan->lte($tugas->deadline)
+            ]);
+
+            DB::commit();
+
+            return redirect()->route('tugas.index')
+                           ->with('success', $message . ($waktuPengumpulan->gt($tugas->deadline) ? ' (Terlambat)' : ''));
+            
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            // Hapus file jika ada error
+            if (isset($filePath) && $filePath) {
+                Storage::disk('public')->delete($filePath);
+            }
+            
+            \Log::error('Error submitting tugas: ' . $e->getMessage());
+            
+            return back()->withErrors(['error' => 'Gagal mengumpulkan tugas: ' . $e->getMessage()])
+                        ->withInput();
         }
-
-        $tugas->update([
-            'status' => 'submitted',
-            'file_jawaban' => $validated['file_jawaban'],
-            'waktu_pengumpulan' => Carbon::now(),
-            'tepat_waktu' => Carbon::now()->lte($tugas->deadline)
-        ]);
-
-        return redirect()->route('tugas.index')
-                       ->with('success', 'Tugas berhasil dikumpulkan');
     }
 
-    // Grade tugas (dosen memberi nilai)
-    public function grade(Request $request, $id)
+    /**
+     * ✅ SHOW TUGAS - Include data pengumpulan
+     */
+    
+
+    /**
+     * ✅ DOWNLOAD FILE JAWABAN
+     */
+    public function downloadJawaban($id)
     {
-        $tugas = Tugas::findOrFail($id);
-
-        $validated = $request->validate([
-            'nilai' => 'required|integer|min:0|max:100',
-            'grade' => 'required|string|max:5',
-            'feedback' => 'nullable|string'
-        ]);
-
-        $tugas->update([
-            'status' => 'graded',
-            'nilai' => $validated['nilai'],
-            'grade' => $validated['grade'],
-            'feedback' => $validated['feedback']
-        ]);
-
-        return redirect()->route('tugas.show', $id)
-                       ->with('success', 'Tugas berhasil dinilai');
+        $pengumpulan = Pengumpulan::findOrFail($id);
+        
+        if (!$pengumpulan->file_tugas || !Storage::disk('public')->exists($pengumpulan->file_tugas)) {
+            return back()->with('error', 'File tidak ditemukan');
+        }
+        
+        return Storage::disk('public')->download($pengumpulan->file_tugas);
     }
 }

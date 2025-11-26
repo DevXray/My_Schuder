@@ -10,9 +10,12 @@ class MahasiswaController extends Controller
     /**
      * Display a listing of the resource.
      */
+    use App\Models\Mahasiswa;
+
     public function index()
     {
-        //
+        $mahasiswas = Mahasiswa::all(); // atau gunakan pagination jika diperlukan
+        return view('mahasiswa.index', compact('mahasiswas'));
     }
 
     /**

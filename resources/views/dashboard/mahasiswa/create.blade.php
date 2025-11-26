@@ -1,4 +1,4 @@
-{{-- resources/views/administrator/mahasiswa/create.blade.php --}}
+{{-- resources/views/dashboard/mahasiswa/create.blade.php - FIXED --}}
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -23,6 +23,18 @@
                 </div>
             </div>
         </section>
+
+        {{-- ✅ Show Errors --}}
+        @if ($errors->any())
+            <div style="margin: 20px; padding: 15px; background: #f8d7da; color: #721c24; border-radius: 8px;">
+                <strong>Terjadi kesalahan:</strong>
+                <ul style="margin: 10px 0 0 20px;">
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
 
         <section class="card" style="max-width: 800px; margin: 0 auto;">
             <div class="card-body">
@@ -102,10 +114,10 @@
                     </div>
 
                     <div style="display: flex; gap: 1rem; margin-top: 2rem;">
-                        <button type="submit" class="btn-action primary" style="flex: 1;">
+                        <button type="submit" class="btn-action primary" style="flex: 1; padding: 0.875rem; background: #3b82f6; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
                             <i class="fas fa-save"></i> Simpan
                         </button>
-                        <a href="{{ route('mahasiswa.index') }}" class="btn-action secondary" style="flex: 1; text-decoration: none; text-align: center;">
+                        <a href="{{ route('mahasiswa.index') }}" class="btn-action secondary" style="flex: 1; text-decoration: none; text-align: center; padding: 0.875rem; background: #6b7280; color: white; border-radius: 8px; font-weight: 600; display: inline-block;">
                             <i class="fas fa-times"></i> Batal
                         </a>
                     </div>

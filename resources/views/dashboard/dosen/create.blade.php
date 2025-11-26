@@ -1,11 +1,10 @@
-{{-- resources/views/administrator/users/create.blade.php --}}
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Tambah User - My Schuder</title>
+    <title>Tambah Dosen - My Schuder</title>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     @vite(['resources/js/app.js'])
@@ -18,31 +17,52 @@
         <section class="page-header">
             <div class="page-header-content">
                 <div class="page-title-section">
-                    <h1><i class="fas fa-user-plus"></i> Tambah User Baru</h1>
-                    <p>Buat akun user dengan role yang sesuai</p>
+                    <h1><i class="fas fa-user-plus"></i> Tambah Dosen</h1>
+                    <p>Tambahkan dosen baru ke sistem</p>
                 </div>
             </div>
         </section>
 
+        @if ($errors->any())
+            <div style="margin: 20px; padding: 15px; background: #f8d7da; color: #721c24; border-radius: 8px;">
+                <strong>Terjadi kesalahan:</strong>
+                <ul style="margin: 10px 0 0 20px;">
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
         <section class="card" style="max-width: 800px; margin: 0 auto;">
             <div class="card-body">
-                <form action="{{ route('users.store') }}" method="POST">
+                <form action="{{ route('dosen.store') }}" method="POST">
                     @csrf
 
-                    {{-- Name --}}
                     <div class="form-group" style="margin-bottom: 1.5rem;">
                         <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #374151;">
-                            <i class="fas fa-user"></i> Nama Lengkap <span style="color: #ef4444;">*</span>
+                            <i class="fas fa-id-card"></i> NIDN <span style="color: #ef4444;">*</span>
                         </label>
-                        <input type="text" name="name" value="{{ old('name') }}" required
+                        <input type="text" name="nidn" value="{{ old('nidn') }}" required
                                style="width: 100%; padding: 0.75rem; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 1rem;"
-                               placeholder="Nama lengkap pengguna">
-                        @error('name')
+                               placeholder="Nomor Induk Dosen Nasional">
+                        @error('nidn')
                             <span style="color: #ef4444; font-size: 0.875rem; margin-top: 0.25rem; display: block;">{{ $message }}</span>
                         @enderror
                     </div>
 
-                    {{-- Email --}}
+                    <div class="form-group" style="margin-bottom: 1.5rem;">
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #374151;">
+                            <i class="fas fa-user"></i> Nama Lengkap <span style="color: #ef4444;">*</span>
+                        </label>
+                        <input type="text" name="nama" value="{{ old('nama') }}" required
+                               style="width: 100%; padding: 0.75rem; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 1rem;"
+                               placeholder="Nama lengkap dosen">
+                        @error('nama')
+                            <span style="color: #ef4444; font-size: 0.875rem; margin-top: 0.25rem; display: block;">{{ $message }}</span>
+                        @enderror
+                    </div>
+
                     <div class="form-group" style="margin-bottom: 1.5rem;">
                         <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #374151;">
                             <i class="fas fa-envelope"></i> Email <span style="color: #ef4444;">*</span>
@@ -55,29 +75,6 @@
                         @enderror
                     </div>
 
-                    {{-- Role Selection --}}
-                    <div class="form-group" style="margin-bottom: 1.5rem;">
-                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #374151;">
-                            <i class="fas fa-user-tag"></i> Role <span style="color: #ef4444;">*</span>
-                        </label>
-                        <select name="role_name" required
-                                style="width: 100%; padding: 0.75rem; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 1rem;">
-                            <option value="">-- Pilih Role --</option>
-                            <option value="admin" {{ old('role_name') === 'admin' ? 'selected' : '' }}>Admin (Akses Penuh)</option>
-                            <option value="dosen" {{ old('role_name') === 'dosen' ? 'selected' : '' }}>Dosen (Pengajar)</option>
-                            <option value="mahasiswa" {{ old('role_name') === 'mahasiswa' ? 'selected' : '' }}>Mahasiswa (Peserta Didik)</option>
-                        </select>
-                        @error('role_name')
-                            <span style="color: #ef4444; font-size: 0.875rem; margin-top: 0.25rem; display: block;">{{ $message }}</span>
-                        @enderror
-                        <small style="display: block; margin-top: 0.5rem; color: #6b7280;">
-                            <strong>Admin:</strong> Akses penuh ke semua fitur<br>
-                            <strong>Dosen:</strong> Dapat kelola materi & nilai<br>
-                            <strong>Mahasiswa:</strong> Dapat akses materi & tugas
-                        </small>
-                    </div>
-
-                    {{-- Password --}}
                     <div class="form-group" style="margin-bottom: 1.5rem;">
                         <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #374151;">
                             <i class="fas fa-lock"></i> Password <span style="color: #ef4444;">*</span>
@@ -90,22 +87,11 @@
                         @enderror
                     </div>
 
-                    {{-- Password Confirmation --}}
-                    <div class="form-group" style="margin-bottom: 1.5rem;">
-                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #374151;">
-                            <i class="fas fa-lock"></i> Konfirmasi Password <span style="color: #ef4444;">*</span>
-                        </label>
-                        <input type="password" name="password_confirmation" required
-                               style="width: 100%; padding: 0.75rem; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 1rem;"
-                               placeholder="Ulangi password">
-                    </div>
-
-                    {{-- Action Buttons --}}
                     <div style="display: flex; gap: 1rem; margin-top: 2rem;">
-                        <button type="submit" class="btn-action primary" style="flex: 1;">
+                        <button type="submit" style="flex: 1; padding: 0.875rem; background: #3b82f6; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
                             <i class="fas fa-save"></i> Simpan
                         </button>
-                        <a href="{{ route('users.index') }}" class="btn-action secondary" style="flex: 1; text-decoration: none; text-align: center;">
+                        <a href="{{ route('dosen.index') }}" style="flex: 1; text-decoration: none; text-align: center; padding: 0.875rem; background: #6b7280; color: white; border-radius: 8px; font-weight: 600; display: inline-block;">
                             <i class="fas fa-times"></i> Batal
                         </a>
                     </div>

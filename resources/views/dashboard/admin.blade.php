@@ -168,12 +168,12 @@
                             <i class="fas fa-book" style="font-size: 1.5rem; color: #3b82f6;"></i>
                         </div>
                         <div>
-                            <h3 style="margin: 0; font-size: 1.1rem;">Kelola Materi</h3>
-                            <p style="margin: 0; font-size: 0.875rem; color: #6b7280;">Manajemen materi pembelajaran</p>
+                            <h3 style="margin: 0; font-size: 1.1rem;">Kelola Dosen</h3>
+                            <p style="margin: 0; font-size: 0.875rem; color: #6b7280;">Khusus Data Dosen</p>
                         </div>
                     </div>
-                    <a href="{{ route('materi.index') }}" class="btn-action primary" style="width: 100%; text-decoration: none;">
-                        <i class="fas fa-arrow-right"></i> Kelola Materi
+                    <a href="{{ route('dosen.index') }}" class="btn-action primary" style="width: 100%; text-decoration: none;">
+                        <i class="fas fa-arrow-right"></i> Kelola Dosen
                     </a>
                 </div>
 
