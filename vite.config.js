@@ -19,7 +19,8 @@ export default defineConfig({
                     'resources/css/pages.css',
                     'resources/css/jadwal.css',
                     'resources/css/materi.css',
-                    'resources/css/tugas.css'
+                    'resources/css/tugas.css',
+                    'resources/css/profile.css'
                 
                 
                 ],

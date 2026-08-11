@@ -184,7 +184,8 @@ class AdministratorController extends Controller
     // ===== MAHASISWA CRUD (Legacy - Optional) =====
     public function mahasiswaIndex()
     {
-        $mahasiswas = User::where('role_id', 'mahasiswa')->latest()->paginate(15);
+        // ✅ FIXED: Query mahasiswa table, bukan users
+        $mahasiswas = Mahasiswa::with('user')->latest()->paginate(15);
         return view('dashboard.mahasiswa.index', compact('mahasiswas'));
     }
 
@@ -242,7 +243,7 @@ public function mahasiswaStore(Request $request)
 
 public function mahasiswaUpdate(Request $request, $id)
 {
-    $mahasiswa = Mahasiswa::findOrFail($id);
+     $mahasiswa= Mahasiswa::findOrFail($id);
 
     $validated = $request->validate([
         'nim' => 'required|string|max:20|unique:mahasiswas,nim,' . $id,

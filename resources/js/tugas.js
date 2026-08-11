@@ -118,11 +118,12 @@ class TugasFilterManager {
   }
 }
 
-// ========== UPLOAD DIALOG ==========
+// ========== UPLOAD DIALOG (FIXED VERSION) ==========
 class UploadDialog {
   constructor(notificationManager) {
     this.notificationManager = notificationManager;
     this.dialog = null;
+    this.currentTugasId = null;
     this.boundHandlers = {
       close: null,
       cancel: null,
@@ -135,85 +136,109 @@ class UploadDialog {
     this.ensureStyles();
   }
 
-  show(preselectedTugas = null) {
-    // ✅ PENTING: Hapus dialog lama jika ada
+  show(tugasId = null) {
     this.close();
-    
-    this.createDialog(preselectedTugas);
+    this.currentTugasId = tugasId;
+    this.createDialog(tugasId);
     this.attachEventListeners();
   }
 
   createDialog(preselectedTugas) {
     this.dialog = document.createElement("div");
     this.dialog.className = "upload-dialog";
+    
+    // ✅ CRITICAL: Buat form yang proper dengan enctype multipart
     this.dialog.innerHTML = `
       <div class="dialog-overlay"></div>
       <div class="dialog-content">
         <div class="dialog-header">
           <h3><i class="fas fa-upload"></i> Upload Tugas</h3>
-          <button class="dialog-close"><i class="fas fa-times"></i></button>
+          <button type="button" class="dialog-close"><i class="fas fa-times"></i></button>
         </div>
-        <div class="dialog-body">
-          <div class="form-group">
-            <label>Pilih Tugas:</label>
-            <select class="form-control" id="selectTugas">
-              <option value="">-- Pilih Tugas --</option>
-              <option value="1">Project Akhir Semester - Aplikasi Web</option>
-              <option value="2">Analisis Kompleksitas Algoritma</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Upload File:</label>
-            <div class="file-upload-area" id="fileUploadArea">
-              <i class="fas fa-cloud-upload-alt"></i>
-              <p>Klik atau drag & drop file di sini</p>
-              <span class="file-info">PDF, DOC, ZIP (Max 10MB)</span>
-              <input type="file" id="fileInput" hidden accept=".pdf,.doc,.docx,.zip">
+        
+        <form id="uploadTugasForm" method="POST" enctype="multipart/form-data">
+          <input type="hidden" name="_token" value="${document.querySelector('meta[name="csrf-token"]').getAttribute('content')}">
+          
+          
+          <div class="dialog-body">
+            ${!preselectedTugas ? `
+            <div class="form-group">
+              <label>Pilih Tugas: <span class="required">*</span></label>
+              <select class="form-control" name="tugas_id" id="selectTugas" required>
+                <option value="">-- Pilih Tugas --</option>
+                ${this.getTugasOptions()}
+              </select>
             </div>
-            <div class="selected-file" id="selectedFile" style="display: none;">
-              <i class="fas fa-file"></i>
-              <span class="file-name"></span>
-              <button class="remove-file"><i class="fas fa-times"></i></button>
+            ` : '<input type="hidden" name="tugas_id" value="${preselectedTugas}">'}
+            
+            <div class="form-group">
+              <label>Upload File: <span class="required">*</span></label>
+              <div class="file-upload-area" id="fileUploadArea">
+                <i class="fas fa-cloud-upload-alt"></i>
+                <p>Klik atau drag & drop file di sini</p>
+                <span class="file-info">PDF, DOC, DOCX, ZIP (Max 20MB)</span>
+                <input type="file" name="file_jawaban" id="fileInput" hidden accept=".pdf,.doc,.docx,.zip" required>
+              </div>
+              <div class="selected-file" id="selectedFile" style="display: none;">
+                <i class="fas fa-file"></i>
+                <span class="file-name"></span>
+                <button type="button" class="remove-file"><i class="fas fa-times"></i></button>
+              </div>
+            </div>
+            
+            <div class="form-group">
+              <label>Catatan (Opsional):</label>
+              <textarea class="form-control" name="catatan" id="noteInput" rows="3" placeholder="Tambahkan catatan untuk dosen..."></textarea>
             </div>
           </div>
-          <div class="form-group">
-            <label>Catatan (Opsional):</label>
-            <textarea class="form-control" id="noteInput" rows="3" placeholder="Tambahkan catatan untuk dosen..."></textarea>
+          
+          <div class="dialog-footer">
+            <button type="button" class="btn-cancel">Batal</button>
+            <button type="submit" class="btn-submit">
+              <i class="fas fa-paper-plane"></i> Kirim Tugas
+            </button>
           </div>
-        </div>
-        <div class="dialog-footer">
-          <button class="btn-cancel">Batal</button>
-          <button class="btn-submit"><i class="fas fa-paper-plane"></i> Kirim Tugas</button>
-        </div>
+        </form>
       </div>
     `;
     
     document.body.appendChild(this.dialog);
+  }
+
+  getTugasOptions() {
+    // ✅ Ambil semua tugas yang pending dari DOM
+    const tugasItems = document.querySelectorAll('.tugas-item[data-status="pending"]');
+    let options = '';
     
-    if (preselectedTugas) {
-      const select = this.dialog.querySelector("#selectTugas");
-      if (select) select.value = preselectedTugas;
-    }
+    tugasItems.forEach(item => {
+      const tugasId = item.querySelector('[onclick*="openSubmitModal"]')?.getAttribute('onclick')?.match(/\d+/)?.[0];
+      const tugasTitle = item.querySelector('h3')?.textContent.trim();
+      if (tugasId && tugasTitle) {
+        options += `<option value="${tugasId}">${tugasTitle}</option>`;
+      }
+    });
+    
+    return options;
   }
 
   attachEventListeners() {
+    const form = this.dialog.querySelector("#uploadTugasForm");
     const closeBtn = this.dialog.querySelector(".dialog-close");
     const cancelBtn = this.dialog.querySelector(".btn-cancel");
-    const submitBtn = this.dialog.querySelector(".btn-submit");
     const dialogOverlay = this.dialog.querySelector(".dialog-overlay");
     const fileUploadArea = this.dialog.querySelector("#fileUploadArea");
     const fileInput = this.dialog.querySelector("#fileInput");
     const selectedFileDiv = this.dialog.querySelector("#selectedFile");
     const removeFileBtn = this.dialog.querySelector(".remove-file");
     
-    // ✅ Store handlers untuk cleanup nanti
+    // ✅ Store handlers
     this.boundHandlers.close = () => this.close();
     this.boundHandlers.cancel = () => this.close();
     this.boundHandlers.overlayClick = () => this.close();
     this.boundHandlers.fileAreaClick = () => fileInput?.click();
     this.boundHandlers.fileChange = (e) => this.handleFileSelect(e.target.files[0], fileUploadArea, selectedFileDiv);
     this.boundHandlers.removeFile = () => this.removeFile(fileInput, fileUploadArea, selectedFileDiv);
-    this.boundHandlers.submit = () => this.handleSubmit(submitBtn, fileInput);
+    this.boundHandlers.submit = (e) => this.handleSubmit(e, form);
     
     closeBtn?.addEventListener("click", this.boundHandlers.close);
     cancelBtn?.addEventListener("click", this.boundHandlers.cancel);
@@ -221,11 +246,17 @@ class UploadDialog {
     fileUploadArea?.addEventListener("click", this.boundHandlers.fileAreaClick);
     fileInput?.addEventListener("change", this.boundHandlers.fileChange);
     removeFileBtn?.addEventListener("click", this.boundHandlers.removeFile);
-    submitBtn?.addEventListener("click", this.boundHandlers.submit);
+    form?.addEventListener("submit", this.boundHandlers.submit);
   }
 
   handleFileSelect(file, uploadArea, selectedDiv) {
     if (file) {
+      // Validate file size (20MB)
+      if (file.size > 20 * 1024 * 1024) {
+        this.notificationManager.show("File terlalu besar! Maksimal 20MB", "error");
+        return;
+      }
+      
       uploadArea.style.display = "none";
       selectedDiv.style.display = "flex";
       const fileNameSpan = selectedDiv.querySelector(".file-name");
@@ -239,50 +270,96 @@ class UploadDialog {
     selectedDiv.style.display = "none";
   }
 
-  handleSubmit(submitBtn, fileInput) {
-    const selectedTugas = this.dialog.querySelector("#selectTugas")?.value;
-    const file = fileInput?.files[0];
+  async handleSubmit(e, form) {
+    e.preventDefault();
     
-    if (!selectedTugas) {
+    const submitBtn = form.querySelector(".btn-submit");
+    const formData = new FormData(form);
+    let tugasId = formData.get('tugas_id') 
+    
+    if (!tugasId || tugasId === '') {
+      tugasId = this.currentTugasId;
+    }
+    
+    // ✅ Debug log
+    console.log('Tugas ID:', tugasId);
+    console.log('Form Data:', {
+      tugas_id: formData.get('tugas_id'),
+      file: formData.get('file_jawaban')?.name,
+      currentTugasId: this.currentTugasId
+    });
+    
+    if (!tugasId) {
       this.notificationManager.show("Pilih tugas terlebih dahulu!", "warning");
       return;
     }
     
-    if (!file) {
+    if (!formData.get('file_jawaban') || formData.get('file_jawaban').size === 0) {
       this.notificationManager.show("Upload file tugas terlebih dahulu!", "warning");
       return;
     }
     
+    // Show loading state
     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mengupload...';
     submitBtn.disabled = true;
     
-    setTimeout(() => {
-      this.close();
-      this.notificationManager.show("Tugas berhasil dikumpulkan! ✅", "success");
-    }, 2000);
+    try {
+      // ✅ Submit menggunakan fetch API
+      const response = await fetch(`/tugas/${tugasId}/submit`, {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+          'Accept': 'application/json',
+        }
+      });
+      
+      const result = await response.json();
+      
+      if (response.ok && result.success) {
+        this.close();
+        this.notificationManager.show(result.message || "Tugas berhasil dikumpulkan! ✅", "success");
+        
+        // Reload page setelah 1 detik
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
+      } else {
+        throw new Error(result.message || 'Gagal mengupload tugas');
+      }
+      
+    } catch (error) {
+      console.error('Upload error:', error);
+      this.notificationManager.show(error.message || "Gagal mengupload tugas. Coba lagi.", "error");
+      
+      // Reset button
+      submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Kirim Tugas';
+      submitBtn.disabled = false;
+    }
   }
 
   close() {
-    // ✅ Remove ALL event listeners sebelum hapus dialog
     if (this.dialog) {
+      const form = this.dialog.querySelector("#uploadTugasForm");
       const closeBtn = this.dialog.querySelector(".dialog-close");
       const cancelBtn = this.dialog.querySelector(".btn-cancel");
-      const submitBtn = this.dialog.querySelector(".btn-submit");
       const dialogOverlay = this.dialog.querySelector(".dialog-overlay");
       const fileUploadArea = this.dialog.querySelector("#fileUploadArea");
       const fileInput = this.dialog.querySelector("#fileInput");
       const removeFileBtn = this.dialog.querySelector(".remove-file");
       
+      // Remove all listeners
       closeBtn?.removeEventListener("click", this.boundHandlers.close);
       cancelBtn?.removeEventListener("click", this.boundHandlers.cancel);
       dialogOverlay?.removeEventListener("click", this.boundHandlers.overlayClick);
       fileUploadArea?.removeEventListener("click", this.boundHandlers.fileAreaClick);
       fileInput?.removeEventListener("change", this.boundHandlers.fileChange);
       removeFileBtn?.removeEventListener("click", this.boundHandlers.removeFile);
-      submitBtn?.removeEventListener("click", this.boundHandlers.submit);
+      form?.removeEventListener("submit", this.boundHandlers.submit);
       
       this.dialog.remove();
       this.dialog = null;
+      this.currentTugasId = null;
     }
   }
 
@@ -365,6 +442,10 @@ class UploadDialog {
         font-weight: 600;
       }
       
+      .required {
+        color: #ef4444;
+      }
+      
       .form-control {
         width: 100%;
         padding: 0.875rem 1rem;
@@ -402,6 +483,11 @@ class UploadDialog {
       .file-upload-area i {
         font-size: 3rem;
         color: #3b82f6;
+      }
+      
+      .file-info {
+        font-size: 0.85rem;
+        color: #64748b;
       }
       
       .selected-file {
@@ -504,6 +590,9 @@ class UploadDialog {
     this.close();
   }
 }
+
+// ✅ Export untuk digunakan di window
+window.UploadDialog = UploadDialog;
 
 // ========== BUTTON ACTION HANDLER ==========
 class ButtonActionHandler {

@@ -27,13 +27,7 @@
         </a>
         @endif
         
-        {{-- Peserta - Untuk Semua Role --}}
-        <a href="/peserta" class="nav-item {{ request()->is('peserta') ? 'active' : '' }}">
-            <i class="fas fa-users"></i>
-            <span>Peserta</span>
-            <span class="nav-badge">32</span>
-            <div class="nav-indicator"></div>
-        </a>
+        
         
         {{-- Tugas - Untuk Semua Role --}}
         <a href="/tugas" class="nav-item {{ request()->is('tugas*') ? 'active' : '' }}">
@@ -48,12 +42,7 @@
             <div class="nav-indicator"></div>
         </a>
         
-        {{-- Pengaturan - Untuk Semua Role --}}
-        <a href="/pengaturan" class="nav-item {{ request()->is('pengaturan') ? 'active' : '' }}">
-            <i class="fas fa-cog"></i>
-            <span>Pengaturan</span>
-            <div class="nav-indicator"></div>
-        </a>
+        
     </nav>
 
     <div class="sidebar-footer">

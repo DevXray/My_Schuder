@@ -1,0 +1,59 @@
+# Production. Jalankan: docker compose -f docker-compose.prod.yml up --build -d
+# Migration TIDAK otomatis (lihat docker/entrypoint.sh). Jalankan manual sekali:
+#   docker compose -f docker-compose.prod.yml run --rm app php artisan migrate --force
+
+services:
+  app:
+    build:
+      context: .
+      target: prod
+    env_file: .env
+    environment:
+      APP_ENV: production
+      APP_DEBUG: "false"
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: 3306
+    volumes:
+      # File upload Materi/Tugas harus persist di luar container.
+      - app-storage:/var/www/html/storage/app/public
+    depends_on:
+      - mysql
+    restart: unless-stopped
+    networks: [myschuder]
+
+  nginx:
+    build:
+      context: .
+      target: nginx-prod
+    ports:
+      - "80:80"
+    volumes:
+      # Nginx TIDAK share filesystem dengan app (beda image, tanpa bind mount).
+      # Supaya file yang di-upload lewat app bisa di-serve nginx sebagai static file,
+      # keduanya mount named volume yang sama, di path yang berbeda (lihat catatan di README/chat).
+      - app-storage:/var/www/html/public/storage:ro
+    depends_on:
+      - app
+    restart: unless-stopped
+    networks: [myschuder]
+
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - mysql-data:/var/lib/mysql
+    restart: unless-stopped
+    networks: [myschuder]
+
+volumes:
+  app-storage:
+  mysql-data:
+
+networks:
+  myschuder:
+    driver: bridge

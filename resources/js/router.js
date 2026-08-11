@@ -94,6 +94,7 @@ class PageLoader {
       const mainContent = 
         doc.querySelector('.main-content')?.innerHTML ||
         doc.querySelector('.pdf-viewer-container')?.innerHTML ||
+        doc.querySelector('.profile-container')?.innerHTML ||  // ← ADDED
         doc.querySelector('#mainContent')?.innerHTML ||
         doc.querySelector('main')?.innerHTML;
       
@@ -163,6 +164,11 @@ class PageLoader {
         case 'jadwal':
           const { initJadwalApp } = await import('./jadwal.js');
           this.currentController = initJadwalApp();
+          break;
+
+        case 'profile':
+          console.log('✅ Profile page loaded');
+          // Profile doesn't need special JS module
           break;
           
         default:
@@ -252,6 +258,10 @@ class Router {
     this.routes.set('/pengaturan', { 
       title: 'Pengaturan',
       module: 'pengaturan'
+    });
+    this.routes.set('/profile', { 
+      title: 'Profil Saya',
+      module: 'profile'
     });
     
     // ✅ Dynamic routes (regex patterns)
@@ -590,6 +600,7 @@ interceptLinks() {
         const newMainContent = 
           document.getElementById('mainContent') || 
           document.querySelector('.pdf-viewer-container') ||
+          document.querySelector('.profile-container') ||  // ← ADDED
           document.querySelector('.main-content') ||
           document.querySelector('main');
         

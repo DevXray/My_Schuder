@@ -1,0 +1,72 @@
+# Development. Jalankan: docker compose up --build
+# Prasyarat: cp .env.docker.example .env  (lalu isi GEMINI_API_KEY dst)
+
+services:
+  app:
+    build:
+      context: .
+      target: dev
+    volumes:
+      - .:/var/www/html
+      # Named volume ini SENGAJA "menutupi" folder vendor dari bind mount di atas.
+      # Kalau tidak, folder vendor kosong dari host akan menimpa vendor yang sudah
+      # di-install saat image build. Konsekuensinya: kalau kamu ubah composer.json,
+      # kamu harus `docker compose exec app composer install` lagi (bukan cuma rebuild),
+      # karena named volume tidak otomatis ke-refresh dari layer image baru.
+      - vendor:/var/www/html/vendor
+    env_file: .env
+    environment:
+      APP_ENV: local
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: 3306
+    depends_on:
+      - mysql
+    networks: [myschuder]
+
+  nginx:
+    image: nginx:1.27-alpine
+    ports:
+      - "8000:80"
+    volumes:
+      - .:/var/www/html
+      - ./docker/nginx/app.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - app
+    networks: [myschuder]
+
+  # Vite dev server terpisah dari image PHP — dia butuh Node, bukan PHP.
+  # vite.config.js sudah di-set host:true & port 5173, jadi tinggal expose port-nya.
+  vite:
+    image: node:20-alpine
+    working_dir: /var/www/html
+    command: sh -c "npm ci && npm run dev -- --host 0.0.0.0"
+    volumes:
+      - .:/var/www/html
+      - node_modules:/var/www/html/node_modules
+    ports:
+      - "5173:5173"
+    networks: [myschuder]
+
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - mysql-data:/var/lib/mysql
+    ports:
+      # host 3307 -> biar tidak bentrok kalau kamu juga punya MySQL lokal di 3306
+      - "3307:3306"
+    networks: [myschuder]
+
+volumes:
+  vendor:
+  node_modules:
+  mysql-data:
+
+networks:
+  myschuder:
+    driver: bridge

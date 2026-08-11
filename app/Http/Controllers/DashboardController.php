@@ -7,6 +7,8 @@ use App\Models\Tugas;
 use App\Models\Materi;
 use App\Models\Jadwal;
 use App\Models\User;
+use App\Models\Pengumpulan;
+use App\Models\Mahasiswa;
 use Carbon\Carbon;
 
 class DashboardController extends Controller
@@ -21,13 +23,19 @@ class DashboardController extends Controller
             'user_name' => $user->name,
             'role_id' => $user->role_id,
             'role_name' => $user->getRoleName(),
-            'is_admin' => $user->isAdmin()
+            'is_admin' => $user->isAdmin(),
+            'is_dosen' => $user->isDosen()
         ]);
         
-        // ✅ Cek apakah user adalah admin
+        // ✅ Cek role dan redirect ke dashboard yang sesuai
         if ($user->isAdmin()) {
             \Log::info('Loading Admin Dashboard');
             return $this->adminDashboard();
+        }
+        
+        if ($user->isDosen()) {
+            \Log::info('Loading Dosen Dashboard');
+            return $this->dosenDashboard();
         }
         
         \Log::info('Loading Student Dashboard');
@@ -53,6 +61,49 @@ class DashboardController extends Controller
         $recentTugas = Tugas::latest()->take(5)->get();
 
         return view('dashboard.admin', compact('stats', 'recentUsers', 'recentMateri', 'recentTugas'));
+    }
+    
+    /**
+     * Dosen Dashboard - Dashboard khusus untuk dosen
+     */
+    private function dosenDashboard()
+    {
+        $user = auth()->user();
+        $dosen = $user->dosen;
+        
+        // Jika user dosen belum punya profile dosen, redirect
+        if (!$dosen) {
+            return redirect()->route('dashboard')
+                ->with('error', 'Profile dosen belum lengkap. Silakan hubungi administrator.');
+        }
+        
+        // Statistik untuk dosen
+        $stats = [
+            'total_materi' => Materi::where('dosen_id', $dosen->id)->count(),
+            'total_tugas' => Tugas::where('dosen_id', $dosen->id)->count(),
+            'tugas_belum_dinilai' => Pengumpulan::whereHas('tugas', function($q) use ($dosen) {
+                $q->where('dosen_id', $dosen->id);
+            })->where('status', 'submitted')->count(),
+            'total_mahasiswa' => Mahasiswa::count(),
+        ];
+        
+        // Materi terbaru yang dibuat dosen ini
+        $recentMateri = Materi::where('dosen_id', $dosen->id)
+            ->latest()
+            ->take(5)
+            ->get();
+        
+        // Pengumpulan yang belum dinilai
+        $pengumpulanBelumDinilai = Pengumpulan::with(['mahasiswa.user', 'tugas'])
+            ->whereHas('tugas', function($q) use ($dosen) {
+                $q->where('dosen_id', $dosen->id);
+            })
+            ->where('status', 'submitted')
+            ->latest()
+            ->take(5)
+            ->get();
+        
+        return view('dashboard.dosen', compact('stats', 'recentMateri', 'pengumpulanBelumDinilai'));
     }
     
     /**

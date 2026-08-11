@@ -40,51 +40,54 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
     
     
-    // ===== USER MANAGEMENT (ALL USERS) =====
-    Route::prefix('users')->name('users.')->group(function () {
-        Route::get('/', [AdministratorController::class, 'userIndex'])->name('index');
-        Route::get('/create', [AdministratorController::class, 'userCreate'])->name('create');
-        Route::post('/', [AdministratorController::class, 'userStore'])->name('store');
-        Route::get('/{id}/edit', [AdministratorController::class, 'userEdit'])->name('edit');
-        Route::put('/{id}', [AdministratorController::class, 'userUpdate'])->name('update');
-        Route::delete('/{id}', [AdministratorController::class, 'userDestroy'])->name('destroy');
+    // ===== ADMIN ONLY ROUTES =====
+    Route::middleware('role:admin')->group(function () {
+        // User Management
+        Route::prefix('users')->name('users.')->group(function () {
+            Route::get('/', [AdministratorController::class, 'userIndex'])->name('index');
+            Route::get('/create', [AdministratorController::class, 'userCreate'])->name('create');
+            Route::post('/', [AdministratorController::class, 'userStore'])->name('store');
+            Route::get('/{id}/edit', [AdministratorController::class, 'userEdit'])->name('edit');
+            Route::put('/{id}', [AdministratorController::class, 'userUpdate'])->name('update');
+            Route::delete('/{id}', [AdministratorController::class, 'userDestroy'])->name('destroy');
+            
+            // Quick actions
+            Route::post('/{id}/change-role', [AdministratorController::class, 'changeRole'])->name('change-role');
+            
+            // Bulk actions
+            Route::post('/bulk-delete', [AdministratorController::class, 'bulkDelete'])->name('bulk-delete');
+            Route::post('/bulk-change-role', [AdministratorController::class, 'bulkChangeRole'])->name('bulk-change-role');
+        });
         
-        // Quick actions
-        Route::post('/{id}/change-role', [AdministratorController::class, 'changeRole'])->name('change-role');
+        // Mahasiswa Management
+        Route::prefix('mahasiswa')->name('mahasiswa.')->group(function () {
+            Route::get('/', [AdministratorController::class, 'mahasiswaIndex'])->name('index');
+            Route::get('/create', [AdministratorController::class, 'mahasiswaCreate'])->name('create');
+            Route::post('/', [AdministratorController::class, 'mahasiswaStore'])->name('store');
+            Route::get('/{id}/edit', [AdministratorController::class, 'mahasiswaEdit'])->name('edit');
+            Route::put('/{id}', [AdministratorController::class, 'mahasiswaUpdate'])->name('update');
+            Route::delete('/{id}', [AdministratorController::class, 'mahasiswaDestroy'])->name('destroy');
+        });
         
-        // Bulk actions
-        Route::post('/bulk-delete', [AdministratorController::class, 'bulkDelete'])->name('bulk-delete');
-        Route::post('/bulk-change-role', [AdministratorController::class, 'bulkChangeRole'])->name('bulk-change-role');
-    });
-    
-    // ===== MAHASISWA MANAGEMENT (LEGACY) =====
-    Route::prefix('mahasiswa')->name('mahasiswa.')->group(function () {
-        Route::get('/', [AdministratorController::class, 'mahasiswaIndex'])->name('index');
-        Route::get('/create', [AdministratorController::class, 'mahasiswaCreate'])->name('create');
-        Route::post('/', [AdministratorController::class, 'mahasiswaStore'])->name('store');
-        Route::get('/{id}/edit', [AdministratorController::class, 'mahasiswaEdit'])->name('edit');
-        Route::put('/{id}', [AdministratorController::class, 'mahasiswaUpdate'])->name('update');
-        Route::delete('/{id}', [AdministratorController::class, 'mahasiswaDestroy'])->name('destroy');
-    });
-    
-    // ===== DOSEN MANAGEMENT (LEGACY) =====
-    Route::prefix('dosen')->name('dosen.')->group(function () {
-        Route::get('/', [AdministratorController::class, 'dosenIndex'])->name('index');
-        Route::get('/create', [AdministratorController::class, 'dosenCreate'])->name('create');
-        Route::post('/', [AdministratorController::class, 'dosenStore'])->name('store');
-        Route::get('/{id}/edit', [AdministratorController::class, 'dosenEdit'])->name('edit');
-        Route::put('/{id}', [AdministratorController::class, 'dosenUpdate'])->name('update');
-        Route::delete('/{id}', [AdministratorController::class, 'dosenDestroy'])->name('destroy');
-    });
-    
-    // ===== MATA KULIAH MANAGEMENT =====
-    Route::prefix('matakuliah')->name('matakuliah.')->group(function () {
-        Route::get('/', [AdministratorController::class, 'mataKuliahIndex'])->name('index');
-        Route::get('/create', [AdministratorController::class, 'mataKuliahCreate'])->name('create');
-        Route::post('/', [AdministratorController::class, 'mataKuliahStore'])->name('store');
-        Route::get('/{id}/edit', [AdministratorController::class, 'mataKuliahEdit'])->name('edit');
-        Route::put('/{id}', [AdministratorController::class, 'mataKuliahUpdate'])->name('update');
-        Route::delete('/{id}', [AdministratorController::class, 'mataKuliahDestroy'])->name('destroy');
+        // Dosen Management
+        Route::prefix('dosen')->name('dosen.')->group(function () {
+            Route::get('/', [AdministratorController::class, 'dosenIndex'])->name('index');
+            Route::get('/create', [AdministratorController::class, 'dosenCreate'])->name('create');
+            Route::post('/', [AdministratorController::class, 'dosenStore'])->name('store');
+            Route::get('/{id}/edit', [AdministratorController::class, 'dosenEdit'])->name('edit');
+            Route::put('/{id}', [AdministratorController::class, 'dosenUpdate'])->name('update');
+            Route::delete('/{id}', [AdministratorController::class, 'dosenDestroy'])->name('destroy');
+        });
+        
+        // Mata Kuliah Management
+        Route::prefix('matakuliah')->name('matakuliah.')->group(function () {
+            Route::get('/', [AdministratorController::class, 'mataKuliahIndex'])->name('index');
+            Route::get('/create', [AdministratorController::class, 'mataKuliahCreate'])->name('create');
+            Route::post('/', [AdministratorController::class, 'mataKuliahStore'])->name('store');
+            Route::get('/{id}/edit', [AdministratorController::class, 'mataKuliahEdit'])->name('edit');
+            Route::put('/{id}', [AdministratorController::class, 'mataKuliahUpdate'])->name('update');
+            Route::delete('/{id}', [AdministratorController::class, 'mataKuliahDestroy'])->name('destroy');
+        });
     });
 
     // ✅ MATERI ROUTES (Admin, Dosen, Mahasiswa - Semua bisa akses)

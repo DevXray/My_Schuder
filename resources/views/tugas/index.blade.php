@@ -11,10 +11,15 @@
 </head>
 <body>
     
+    <!-- Header -->
     @include('partials.header')
+
+    <!-- Sidebar -->
     @include('partials.sidebar')
 
+    <!-- Main Content -->
     <main class="main-content" id="mainContent">
+        <!-- Success/Error Message -->
         @if(session('success'))
         <div class="alert alert-success">
             <i class="fas fa-check-circle"></i>
@@ -33,12 +38,12 @@
         <section class="page-header">
             <div class="page-header-content">
                 <div class="page-title-section">
-                    <h1><i class="fas fa-clipboard-list"></i> Tugas & Pengumpulan</h1>
+                    <h1><i class="fas fa-clipboard-list"></i> Tugas & Penilaian</h1>
                     <p>Kelola dan kumpulkan tugas Anda tepat waktu</p>
                 </div>
-                <button class="btn-primary" onclick="window.location.href='{{ route('tugas.create') }}'">
-                    <i class="fas fa-plus"></i>
-                    Tambah Tugas Baru
+                <button class="btn-primary" id="uploadTugasBtn" onclick="window.location.href='{{ route('tugas.create') }}'">
+                    <i class="fas fa-upload"></i>
+                    Upload Tugas
                 </button>
             </div>
         </section>
@@ -53,13 +58,18 @@
                 </button>
                 <button class="filter-tab {{ request('status') == 'pending' ? 'active' : '' }}" 
                         onclick="filterByStatus('pending')">
-                    <i class="fas fa-clock"></i> Belum Dikumpulkan 
+                    <i class="fas fa-clock"></i> Pending 
                     <span class="tab-count warning">{{ $counts['pending'] ?? 0 }}</span>
                 </button>
                 <button class="filter-tab {{ request('status') == 'submitted' ? 'active' : '' }}" 
                         onclick="filterByStatus('submitted')">
-                    <i class="fas fa-check"></i> Sudah Dikumpulkan 
+                    <i class="fas fa-check"></i> Dikumpulkan 
                     <span class="tab-count success">{{ $counts['submitted'] ?? 0 }}</span>
+                </button>
+                <button class="filter-tab {{ request('status') == 'graded' ? 'active' : '' }}" 
+                        onclick="filterByStatus('graded')">
+                    <i class="fas fa-star"></i> Dinilai 
+                    <span class="tab-count blue">{{ $counts['graded'] ?? 0 }}</span>
                 </button>
             </div>
         </section>
@@ -87,7 +97,23 @@
                 <div class="stat-info">
                     <h3>Sudah Dikumpulkan</h3>
                     <p class="stat-value">{{ $stats['sudah_dikumpulkan'] ?? 0 }}</p>
-                    <span class="stat-desc">Tugas selesai</span>
+                    <span class="stat-desc">Menunggu penilaian</span>
+                </div>
+            </div>
+            <div class="stat-card blue">
+                <div class="stat-icon"><i class="fas fa-chart-line"></i></div>
+                <div class="stat-info">
+                    <h3>Nilai Rata-rata</h3>
+                    <p class="stat-value">{{ $stats['rata_rata'] ?? 0 }}</p>
+                    <span class="stat-desc">
+                        @if(($stats['rata_rata'] ?? 0) >= 85)
+                            Sangat baik!
+                        @elseif(($stats['rata_rata'] ?? 0) >= 75)
+                            Baik!
+                        @else
+                            Perlu ditingkatkan
+                        @endif
+                    </span>
                 </div>
             </div>
         </section>
@@ -97,7 +123,8 @@
             @forelse($tugas as $item)
             <div class="tugas-item" data-status="{{ $item->status }}" data-priority="{{ $item->priority }}">
                 
-                @if($item->is_deadline_dekat && $item->status == 'pending')
+                <!-- Priority Badge for High Priority Pending Tasks -->
+                @if($item->is_deadline_dekat)
                 <div class="tugas-priority high">
                     <i class="fas fa-exclamation-circle"></i>
                     Deadline Dekat!
@@ -107,21 +134,39 @@
                 <!-- Header -->
                 <div class="tugas-header">
                     <div class="tugas-info">
-                        <h3>{{ $item->judul }}</h3>
+                        <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem;">
+                            <h3 style="margin: 0;">{{ $item->judul }}</h3>
+                            
+                            @if($item->status == 'graded' && $item->nilai)
+                            <div class="tugas-grade {{ $item->grade_category }}">
+                                <i class="fas fa-{{ $item->nilai >= 90 ? 'trophy' : 'star' }}"></i>
+                                <span class="grade-value">{{ $item->nilai }}</span>
+                                <span class="grade-label">/ 100</span>
+                            </div>
+                            @endif
+                        </div>
                         <p class="tugas-subject">
                             <i class="fas fa-book"></i> 
-                            {{ $item->materi->judul ?? 'Materi' }}
+                            {{ $item->materi->nama_materi ?? 'Materi' }}
                         </p>
                     </div>
                     <div class="tugas-status {{ $item->status }}">
-                        <i class="fas fa-{{ $item->status == 'submitted' ? 'check' : 'clock' }}"></i>
-                        {{ $item->status == 'submitted' ? 'Sudah Dikumpulkan' : 'Belum Dikumpulkan' }}
+                        <i class="fas {{ $item->status_icon }}"></i>
+                        {{ $item->status_text }}
                     </div>
                 </div>
 
                 <!-- Body -->
                 <div class="tugas-body">
                     <p class="tugas-description">{{ $item->deskripsi }}</p>
+
+                    <!-- Feedback Box for Graded Tasks -->
+                    @if($item->status == 'graded' && $item->feedback)
+                    <div class="feedback-box {{ $item->nilai >= 85 ? '' : 'warning' }}">
+                        <h4><i class="fas fa-comment-alt"></i> Feedback Dosen:</h4>
+                        <p>"{{ $item->feedback }}"</p>
+                    </div>
+                    @endif
 
                     <!-- Meta Information -->
                     <div class="tugas-meta">
@@ -138,18 +183,29 @@
                                 <i class="fas fa-weight-hanging"></i>
                                 <span>Bobot: {{ $item->bobot }}%</span>
                             </div>
-                        @else
+                        @elseif($item->status == 'submitted')
                             <div class="meta-item">
                                 <i class="fas fa-calendar-alt"></i>
-                                <span>Dikumpulkan: {{ $item->pengumpulan_data->waktu_pengumpulan->format('d M Y, H:i') }}</span>
+                                <span>Dikumpulkan: {{ $item->waktu_pengumpulan ? $item->waktu_pengumpulan->format('d M Y, H:i') : '-' }}</span>
                             </div>
-                            <div class="meta-item {{ $item->pengumpulan_data->tepat_waktu ? 'success' : 'deadline' }}">
-                                <i class="fas fa-{{ $item->pengumpulan_data->tepat_waktu ? 'check-circle' : 'exclamation-circle' }}"></i>
-                                <span>{{ $item->pengumpulan_data->tepat_waktu ? 'Tepat Waktu' : 'Terlambat' }}</span>
+                            <div class="meta-item {{ $item->tepat_waktu ? 'success' : 'deadline' }}">
+                                <i class="fas fa-{{ $item->tepat_waktu ? 'check-circle' : 'exclamation-circle' }}"></i>
+                                <span>{{ $item->tepat_waktu ? 'Tepat Waktu' : 'Terlambat' }}</span>
                             </div>
+                            @if($item->file_jawaban)
                             <div class="meta-item">
                                 <i class="fas fa-file"></i>
-                                <span>{{ basename($item->pengumpulan_data->file_tugas) }}</span>
+                                <span>{{ basename($item->file_jawaban) }}</span>
+                            </div>
+                            @endif
+                        @elseif($item->status == 'graded')
+                            <div class="meta-item">
+                                <i class="fas fa-calendar-alt"></i>
+                                <span>Dinilai: {{ $item->updated_at->format('d M Y') }}</span>
+                            </div>
+                            <div class="meta-item success">
+                                <i class="fas fa-award"></i>
+                                <span>Grade: {{ $item->grade }}</span>
                             </div>
                         @endif
                     </div>
@@ -169,20 +225,25 @@
                             <i class="fas fa-download"></i> Unduh Soal
                         </a>
                         @endif
-                    @else
+                    @elseif($item->status == 'submitted')
                         <button class="btn-action secondary" onclick="window.location.href='{{ route('tugas.show', $item->id) }}'">
                             <i class="fas fa-eye"></i> Lihat Pengumpulan
                         </button>
-                        <a href="{{ asset('storage/' . $item->pengumpulan_data->file_tugas) }}" class="btn-action tertiary" download>
-                            <i class="fas fa-download"></i> Unduh File
-                        </a>
                         <button class="btn-action tertiary" onclick="openSubmitModal({{ $item->id }})">
                             <i class="fas fa-edit"></i> Edit Pengumpulan
                         </button>
+                    @elseif($item->status == 'graded')
+                        <button class="btn-action secondary" onclick="window.location.href='{{ route('tugas.show', $item->id) }}'">
+                            <i class="fas fa-eye"></i> Lihat Detail Nilai
+                        </button>
+                        @if($item->feedback)
+                        <button class="btn-action tertiary" onclick="alert('Download feedback feature coming soon!')">
+                            <i class="fas fa-download"></i> Unduh Feedback
+                        </button>
+                        @endif
                     @endif
                 </div>
             </div>
-            
             @empty
             <div class="empty-state">
                 <i class="fas fa-inbox"></i>
@@ -193,8 +254,13 @@
         </section>
     </main>
 
+    <!--chatbot-->
     @include('partials.chatbot')
+
+    <!-- Overlay -->
     <div class="overlay" id="overlay"></div>
+
+    <!-- Loading Screen -->
     @include('partials.loadingscreen')
 
     <script>
@@ -209,12 +275,22 @@
         }
 
         function openSubmitModal(tugasId) {
-            // Create modal using existing upload dialog from tugas.js
-            const uploadDialog = new window.UploadDialog(window.NotificationManager.getInstance());
-            uploadDialog.show(tugasId);
+            const modal = document.getElementById('submitModal');
+            const form = document.getElementById('submitForm');
+            form.action = `/tugas/${tugasId}/submit`;
+            modal.style.display = 'block';
+            document.getElementById('overlay').style.display = 'block';
         }
 
-        // Auto hide alerts
+        function closeSubmitModal() {
+            document.getElementById('submitModal').style.display = 'none';
+            document.getElementById('overlay').style.display = 'none';
+        }
+
+        // Close modal on overlay click
+        document.getElementById('overlay')?.addEventListener('click', closeSubmitModal);
+
+        // Auto hide alerts after 5 seconds
         setTimeout(() => {
             document.querySelectorAll('.alert').forEach(alert => {
                 alert.style.animation = 'slideUp 0.3s ease';
@@ -222,5 +298,180 @@
             });
         }, 5000);
     </script>
+
+    <style>
+        /* Alert Styles */
+        .alert {
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            animation: slideDown 0.3s ease;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border-left: 4px solid #28a745;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border-left: 4px solid #dc3545;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 1;
+                transform: translateY(0);
+            }
+            to {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            background: white;
+            border-radius: 16px;
+        }
+
+        .empty-state i {
+            font-size: 4rem;
+            color: #e9ecef;
+            margin-bottom: 1rem;
+        }
+
+        .empty-state h3 {
+            color: #6c757d;
+            margin-bottom: 0.5rem;
+        }
+
+        .empty-state p {
+            color: #adb5bd;
+        }
+
+        /* Modal Styles */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1001;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            animation: modalSlideUp 0.3s ease;
+        }
+
+        @keyframes modalSlideUp {
+            from {
+                opacity: 0;
+                transform: translateY(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            color: #212529;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #6c757d;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+
+        .modal-close:hover {
+            background: #f8f9fa;
+            color: #212529;
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #212529;
+        }
+
+        .form-group input[type="file"] {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px dashed #dee2e6;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .form-group small {
+            display: block;
+            margin-top: 0.5rem;
+            color: #6c757d;
+            font-size: 0.875rem;
+        }
+
+        .modal-footer {
+            padding: 1.5rem;
+            border-top: 1px solid #e9ecef;
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+        }
+    </style>
 </body>
 </html>

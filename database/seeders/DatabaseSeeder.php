@@ -2,72 +2,27 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
-use App\Models\Role;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        // ✅ FIRST: Seed roles
+        // ✅ Seed dalam urutan yang benar
         $this->call([
-            RoleSeeder::class,
+            RoleSeeder::class,      // 1. Buat roles dulu
+            UserSeeder::class,      // 2. Buat users dengan role
+            JadwalSeeder::class,    // 3. Buat jadwal
+            MateriSeeder::class,    // 4. Buat materi
+            TugasSeeder::class,     // 5. Buat tugas
+            DosenSeeder::class,     // 6. Buat data dosen tambahan (jika ada)
         ]);
 
-        // ✅ Refresh role cache
-        $adminRole = Role::where('name', 'admin')->first();
-        $dosenRole = Role::where('name', 'dosen')->first();
-        $mahasiswaRole = Role::where('name', 'mahasiswa')->first();
-
-        // ✅ Create admin user dengan ROLE_ID yang benar
-        $admin = User::firstOrCreate(
-            ['email' => 'admin@example.com'],
-            [
-                'name' => 'Admin User',
-                'password' => Hash::make('password'),
-                'email_verified_at' => now(),
-            ]
-        );
-        
-        // ✅ PASTIKAN role_id admin = 1
-        $admin->role_id = $adminRole->id;
-        $admin->save();
-
-        // ✅ Create test users
-        $dosen = User::firstOrCreate(
-            ['email' => 'dosen@example.com'],
-            [
-                'name' => 'Test Dosen',
-                'password' => Hash::make('password'),
-                'email_verified_at' => now(),
-            ]
-        );
-        $dosen->role_id = $dosenRole->id;
-        $dosen->save();
-
-        $mahasiswa = User::firstOrCreate(
-            ['email' => 'mahasiswa@example.com'],
-            [
-                'name' => 'Test Mahasiswa',
-                'password' => Hash::make('password'),
-                'email_verified_at' => now(),
-            ]
-        );
-        $mahasiswa->role_id = $mahasiswaRole->id;
-        $mahasiswa->save();
-
-        // Then seed other data
-        $this->call([
-            DosenSeeder::class,
-            MateriSeeder::class,
-            TugasSeeder::class,
-        ]);
-        
-        // ✅ Log hasil
-        $this->command->info('✅ Admin user role: ' . $admin->getRoleName());
-        $this->command->info('✅ Dosen user role: ' . $dosen->getRoleName());
-        $this->command->info('✅ Mahasiswa user role: ' . $mahasiswa->getRoleName());
+        $this->command->info('✅ Database seeded successfully!');
+        $this->command->info('');
+        $this->command->info('=== LOGIN CREDENTIALS ===');
+        $this->command->info('Admin: admin@schuder.ac.id / admin123');
+        $this->command->info('Dosen: budi.santoso@schuder.ac.id / dosen123');
+        $this->command->info('Mahasiswa: mahasiswa1@student.schuder.ac.id / mahasiswa123');
     }
 }

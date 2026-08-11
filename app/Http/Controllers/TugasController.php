@@ -6,7 +6,8 @@ use App\Models\Tugas;
 use App\Models\Dosen;
 use App\Models\Materi;
 use App\Models\Mahasiswa;
-use App\Models\PengumpulanTugas;
+use App\Models\Pengumpulan;
+use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -16,19 +17,35 @@ class TugasController extends Controller
 {
     public function index(Request $request)
     {
-        $userId = auth()->id();
+        $user = auth()->user();
+        
+        // ✅ FIXED: Get mahasiswa_id properly
+        $mahasiswa = Mahasiswa::where('user_id', $user->id)->first();
+        
+        if (!$mahasiswa && $user->isMahasiswa()) {
+            return redirect()->route('dashboard')
+                ->with('error', 'Data mahasiswa tidak ditemukan. Hubungi administrator.');
+        }
+        
         $query = Tugas::with(['dosen', 'materi']);
 
-        // Filter by status (pending/submitted)
+        // ✅ FIXED: Filter by status dengan mahasiswa_id yang benar
         if ($request->has('status') && $request->status != 'all') {
-            if ($request->status == 'pending') {
-                $query->whereDoesntHave('pengumpulan', function($q) use ($userId) {
-                    $q->where('mahasiswa_id', $userId);
-                });
-            } elseif ($request->status == 'submitted') {
-                $query->whereHas('pengumpulan', function($q) use ($userId) {
-                    $q->where('mahasiswa_id', $userId);
-                });
+            if ($mahasiswa) {
+                if ($request->status == 'pending') {
+                    $query->whereDoesntHave('pengumpulans', function($q) use ($mahasiswa) {
+                        $q->where('mahasiswa_id', $mahasiswa->id); // ✅ Gunakan mahasiswa->id
+                    });
+                } elseif ($request->status == 'submitted') {
+                    $query->whereHas('pengumpulans', function($q) use ($mahasiswa) {
+                        $q->where('mahasiswa_id', $mahasiswa->id); // ✅ Gunakan mahasiswa->id
+                    });
+                } elseif ($request->status == 'graded') {
+                    $query->whereHas('pengumpulans', function($q) use ($mahasiswa) {
+                        $q->where('mahasiswa_id', $mahasiswa->id)
+                          ->whereNotNull('nilai');
+                    });
+                }
             }
         }
 
@@ -46,37 +63,26 @@ class TugasController extends Controller
         }
 
         // Sort
-        if ($request->has('sort')) {
-            switch ($request->sort) {
-                case 'deadline':
-                    $query->orderBy('deadline', 'asc');
-                    break;
-                case 'terbaru':
-                    $query->latest();
-                    break;
-                case 'bobot':
-                    $query->orderBy('bobot', 'desc');
-                    break;
-                default:
-                    $query->orderBy('deadline', 'asc');
-            }
-        } else {
-            $query->orderBy('deadline', 'asc');
-        }
+        $query->orderBy('deadline', 'asc');
 
-        $tugas = $query->get()->map(function($item) use ($userId) {
-            $pengumpulan = $item->pengumpulans()
-                ->where('mahasiswa_id', $userId)
-                ->first();
-            
-            $item->status = $pengumpulan ? 'submitted' : 'pending';
-            $item->pengumpulan_data = $pengumpulan;
+        $tugas = $query->get()->map(function($item) use ($mahasiswa) {
+            if ($mahasiswa) {
+                $pengumpulan = $item->pengumpulans()
+                    ->where('mahasiswa_id', $mahasiswa->id)
+                    ->first();
+                
+                $item->status = $pengumpulan ? 'submitted' : 'pending';
+                $item->pengumpulan_data = $pengumpulan;
+            } else {
+                $item->status = 'pending';
+                $item->pengumpulan_data = null;
+            }
             
             return $item;
         });
 
-        $stats = Tugas::getStats();
-        $counts = Tugas::getCountByStatus();
+        $stats = $this->getStats($mahasiswa);
+        $counts = $this->getCounts($mahasiswa);
 
         return view('tugas.index', compact('tugas', 'stats', 'counts'));
     }
@@ -120,7 +126,7 @@ class TugasController extends Controller
         $pengumpulan = null;
         if (auth()->user()->isMahasiswa()) {
             $mahasiswas = Mahasiswa::where('user_id', auth()->id())->first();
-            if ($mahasiswa) {
+            if ($mahasiswas) {
                 $pengumpulan = Pengumpulan::where('tugas_id', $id)
                                           ->where('mahasiswa_id', $mahasiswa->id)
                                           ->first();
@@ -182,13 +188,101 @@ class TugasController extends Controller
     }
 
     // Submit tugas (mahasiswa mengumpulkan)
+   // app/Http/Controllers/TugasController.php
+
+// app/Http/Controllers/TugasController.php - METHOD SUBMIT (FIXED)
+// ✅ Helper method untuk stats
+    private function getStats($mahasiswa)
+    {
+        if (!$mahasiswa) {
+            return [
+                'deadline_dekat' => 0,
+                'belum_dikumpulkan' => 0,
+                'sudah_dikumpulkan' => 0,
+                'rata_rata' => 0,
+            ];
+        }
+
+        $threeDaysLater = Carbon::now()->addDays(3);
+        
+        $deadlineDekat = Tugas::where('deadline', '<=', $threeDaysLater)
+            ->where('deadline', '>=', Carbon::now())
+            ->whereDoesntHave('pengumpulans', function($q) use ($mahasiswa) {
+                $q->where('mahasiswa_id', $mahasiswa->id);
+            })
+            ->count();
+
+        $belumDikumpulkan = Tugas::whereDoesntHave('pengumpulans', function($q) use ($mahasiswa) {
+            $q->where('mahasiswa_id', $mahasiswa->id);
+        })->count();
+
+        $sudahDikumpulkan = Tugas::whereHas('pengumpulans', function($q) use ($mahasiswa) {
+            $q->where('mahasiswa_id', $mahasiswa->id);
+        })->count();
+
+        $rataRata = Pengumpulan::where('mahasiswa_id', $mahasiswa->id)
+            ->whereNotNull('nilai')
+            ->avg('nilai');
+
+        return [
+            'deadline_dekat' => $deadlineDekat,
+            'belum_dikumpulkan' => $belumDikumpulkan,
+            'sudah_dikumpulkan' => $sudahDikumpulkan,
+            'rata_rata' => $rataRata ? round($rataRata) : 0,
+        ];
+    }
+
+    // ✅ Helper method untuk counts
+    private function getCounts($mahasiswa)
+    {
+        if (!$mahasiswa) {
+            return [
+                'all' => Tugas::count(),
+                'pending' => 0,
+                'submitted' => 0,
+                'graded' => 0,
+            ];
+        }
+
+        $all = Tugas::count();
+        
+        $pending = Tugas::whereDoesntHave('pengumpulans', function($q) use ($mahasiswa) {
+            $q->where('mahasiswa_id', $mahasiswa->id);
+        })->count();
+
+        $submitted = Tugas::whereHas('pengumpulans', function($q) use ($mahasiswa) {
+            $q->where('mahasiswa_id', $mahasiswa->id)
+              ->whereNull('nilai');
+        })->count();
+
+        $graded = Tugas::whereHas('pengumpulans', function($q) use ($mahasiswa) {
+            $q->where('mahasiswa_id', $mahasiswa->id)
+              ->whereNotNull('nilai');
+        })->count();
+
+        return [
+            'all' => $all,
+            'pending' => $pending,
+            'submitted' => $submitted,
+            'graded' => $graded,
+        ];
+    }
+
+// ✅ FIXED: Submit method dengan AJAX response
     public function submit(Request $request, $id)
     {
+        \Log::info('Submit request received', [
+            'tugas_id' => $id,
+            'user_id' => auth()->id(),
+            'has_file' => $request->hasFile('file_jawaban'),
+            'request_data' => $request->except('file_jawaban'),
+        ]);
+
         $tugas = Tugas::findOrFail($id);
         
         // ✅ Validasi input
         $validated = $request->validate([
-            'file_jawaban' => 'required|file|mimes:pdf,doc,docx,zip|max:20480', // Max 20MB
+            'file_jawaban' => 'required|file|mimes:pdf,doc,docx,zip|max:20480',
             'catatan' => 'nullable|string|max:1000'
         ], [
             'file_jawaban.required' => 'File jawaban harus diupload',
@@ -199,80 +293,117 @@ class TugasController extends Controller
         DB::beginTransaction();
         
         try {
-            // ✅ 1. Get mahasiswa_id dari user yang sedang login
             $user = auth()->user();
             
-            // Cari mahasiswa berdasarkan user_id
-            $mahasiswas = Mahasiswa::where('user_id', $user->id)->first();
+            // ✅ Get mahasiswa
+            $mahasiswa = Mahasiswa::where('user_id', $user->id)->first();
             
             if (!$mahasiswa) {
-                return back()->withErrors(['error' => 'Data mahasiswa tidak ditemukan. Hubungi administrator.']);
+                $mahasiswa = Mahasiswa::where('email', $user->email)->first();
+            }
+            
+            if (!$mahasiswa) {
+                \Log::error('Mahasiswa not found', [
+                    'user_id' => $user->id,
+                    'email' => $user->email
+                ]);
+                
+                DB::rollBack();
+                
+                if ($request->expectsJson()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Data mahasiswa tidak ditemukan. Hubungi administrator.'
+                    ], 404);
+                }
+                
+                return back()->withErrors(['error' => 'Data mahasiswa tidak ditemukan.']);
             }
 
-            // ✅ 2. Cek apakah sudah pernah mengumpulkan
+            \Log::info('Mahasiswa found', [
+                'mahasiswa_id' => $mahasiswa->id,
+                'nama' => $mahasiswa->nama
+            ]);
+
+            // ✅ Cek existing
             $existingPengumpulan = Pengumpulan::where('tugas_id', $tugas->id)
                                               ->where('mahasiswa_id', $mahasiswa->id)
                                               ->first();
             
-            // ✅ 3. Upload file
+            // ✅ Upload file
             $filePath = null;
             if ($request->hasFile('file_jawaban')) {
-                // Hapus file lama jika ada
                 if ($existingPengumpulan && $existingPengumpulan->file_tugas) {
                     Storage::disk('public')->delete($existingPengumpulan->file_tugas);
                 }
                 
-                // Upload file baru
                 $file = $request->file('file_jawaban');
-                $fileName = time() . '_' . $user->id . '_' . $file->getClientOriginalName();
+                $fileName = time() . '_' . $mahasiswa->id . '_' . Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME)) . '.' . $file->getClientOriginalExtension();
                 $filePath = $file->storeAs('pengumpulan_tugas', $fileName, 'public');
+                
+                \Log::info('File uploaded', [
+                    'path' => $filePath,
+                    'size' => $file->getSize()
+                ]);
             }
 
-            // ✅ 4. Simpan/Update ke tabel pengumpulan_tugas
             $waktuPengumpulan = Carbon::now();
             
             if ($existingPengumpulan) {
-                // Update pengumpulan yang sudah ada
                 $existingPengumpulan->update([
                     'file_tugas' => $filePath,
                     'waktu_pengumpulan' => $waktuPengumpulan,
                 ]);
-                
                 $message = 'Tugas berhasil diperbarui!';
             } else {
-                // Buat pengumpulan baru
                 Pengumpulan::create([
                     'tugas_id' => $tugas->id,
                     'mahasiswa_id' => $mahasiswa->id,
                     'file_tugas' => $filePath,
                     'waktu_pengumpulan' => $waktuPengumpulan,
                 ]);
-                
                 $message = 'Tugas berhasil dikumpulkan!';
             }
 
-            // ✅ 5. OPTIONAL: Update status di tabel tugas (jika masih digunakan)
-            $tugas->update([
-                'status' => 'submitted',
-                'file_jawaban' => $filePath,
-                'waktu_pengumpulan' => $waktuPengumpulan,
-                'tepat_waktu' => $waktuPengumpulan->lte($tugas->deadline)
+            DB::commit();
+            
+            \Log::info('Submission successful', [
+                'tugas_id' => $tugas->id,
+                'mahasiswa_id' => $mahasiswa->id
             ]);
 
-            DB::commit();
+            $tepatWaktu = $waktuPengumpulan->lte($tugas->deadline);
+            $statusMessage = $tepatWaktu ? '' : ' (Terlambat)';
+
+            // ✅ Return JSON untuk AJAX request
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => $message . $statusMessage
+                ]);
+            }
 
             return redirect()->route('tugas.index')
-                           ->with('success', $message . ($waktuPengumpulan->gt($tugas->deadline) ? ' (Terlambat)' : ''));
+                           ->with('success', $message . $statusMessage);
             
         } catch (\Exception $e) {
             DB::rollBack();
             
-            // Hapus file jika ada error
             if (isset($filePath) && $filePath) {
                 Storage::disk('public')->delete($filePath);
             }
             
-            \Log::error('Error submitting tugas: ' . $e->getMessage());
+            \Log::error('Submit error', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Gagal mengumpulkan tugas: ' . $e->getMessage()
+                ], 500);
+            }
             
             return back()->withErrors(['error' => 'Gagal mengumpulkan tugas: ' . $e->getMessage()])
                         ->withInput();
